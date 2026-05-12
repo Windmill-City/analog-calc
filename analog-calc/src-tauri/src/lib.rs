@@ -56,6 +56,7 @@ struct DividerSolution {
     r1: ResistorInfo,
     r2: ResistorInfo,
     vo: f64,
+    vi: f64,
     error_percent: f64,
 }
 
@@ -130,6 +131,59 @@ fn build_search_set(
     entries.into_iter().map(|(_, info)| info).collect()
 }
 
+fn solution_score(error: f64, config: &str, series: &str) -> f64 {
+    let cf = match config {
+        "single" => 1.0,
+        "series" => 1.5,
+        _ => 2.0,
+    };
+    let pf = match series {
+        "E6" => 2.0,
+        "E12" => 1.5,
+        "E24" => 1.0,
+        _ => 0.5,
+    };
+    error * cf * pf
+}
+
+fn find_best_r1<'a>(
+    search_set: &'a [ResistorInfo],
+    ideal_r1: f64,
+    // forward: vi * r2_val / (r1.value + r2_val), target: given target_vo
+    // reverse: known_vo * (r1.value + r2_val) / r2_val, target: given target_vi
+    r2_val: f64,
+    known: f64,
+    target: f64,
+    reverse_mode: bool,
+) -> Option<(&'a ResistorInfo, f64, f64)> {
+    let idx = match search_set.binary_search_by(|probe| {
+        probe.value.partial_cmp(&ideal_r1).unwrap_or(std::cmp::Ordering::Less)
+    }) {
+        Ok(i) => i,
+        Err(i) => i,
+    };
+
+    let mut best: Option<(&ResistorInfo, f64, f64)> = None;
+
+    for &ci in &[idx.saturating_sub(1), idx, idx + 1] {
+        if ci >= search_set.len() {
+            continue;
+        }
+        let r1 = &search_set[ci];
+        let computed = if reverse_mode {
+            known * (r1.value + r2_val) / r2_val
+        } else {
+            known * r2_val / (r1.value + r2_val)
+        };
+        let error = ((computed - target) / target * 100.0).abs();
+        if error < 5.0 && best.as_ref().map_or(true, |b| error < b.2) {
+            best = Some((r1, computed, error));
+        }
+    }
+
+    best
+}
+
 #[tauri::command]
 async fn calculate_divider(
     vi: f64,
@@ -138,6 +192,7 @@ async fn calculate_divider(
     use_series: bool,
     use_parallel: bool,
     count: u32,
+    reverse: bool,
 ) -> Vec<DividerSolution> {
     tokio::task::spawn_blocking(move || {
         let (use_series, use_parallel) = if series == "E6" || series == "E12" {
@@ -149,59 +204,49 @@ async fn calculate_divider(
         let values = expand_values(base, 0, 6);
         let search_set = build_search_set(&values, use_series, use_parallel);
 
-        if target_vo <= 0.0 || target_vo >= vi {
+        let (known, target, valid) = if reverse {
+            (vi, target_vo, vi > 0.0 && target_vo > vi)
+        } else {
+            (vi, target_vo, target_vo > 0.0 && target_vo < vi)
+        };
+
+        if !valid {
             return vec![];
         }
 
-        let target_ratio = target_vo / vi;
+        let target_ratio = if reverse { target / known } else { target / known };
         let mut solutions: Vec<DividerSolution> = Vec::new();
 
         for r2 in &search_set {
-            let ideal_r1 = r2.value * (1.0 / target_ratio - 1.0);
-
-            let idx = match search_set.binary_search_by(|probe| {
-                probe.value.partial_cmp(&ideal_r1).unwrap_or(std::cmp::Ordering::Less)
-            }) {
-                Ok(i) => i,
-                Err(i) => i,
+            let ideal_r1 = if reverse {
+                r2.value * (target_ratio - 1.0)
+            } else {
+                r2.value * (1.0 / target_ratio - 1.0)
             };
 
-            for i in idx..search_set.len() {
-                let r1 = &search_set[i];
-                let vo = vi * r2.value / (r1.value + r2.value);
-                let error = ((vo - target_vo) / target_vo * 100.0).abs();
-                if error < 5.0 {
-                    solutions.push(DividerSolution {
-                        r1: r1.clone(),
-                        r2: r2.clone(),
-                        vo,
-                        error_percent: error,
-                    });
+            if let Some((r1, computed, error)) =
+                find_best_r1(&search_set, ideal_r1, r2.value, known, target, reverse)
+            {
+                let (vo, vi_val) = if reverse {
+                    (known, computed)
                 } else {
-                    break;
-                }
-            }
-
-            let mut i = idx as isize - 1;
-            while i >= 0 {
-                let r1 = &search_set[i as usize];
-                let vo = vi * r2.value / (r1.value + r2.value);
-                let error = ((vo - target_vo) / target_vo * 100.0).abs();
-                if error < 5.0 {
-                    solutions.push(DividerSolution {
-                        r1: r1.clone(),
-                        r2: r2.clone(),
-                        vo,
-                        error_percent: error,
-                    });
-                } else {
-                    break;
-                }
-                i -= 1;
+                    (computed, known)
+                };
+                solutions.push(DividerSolution {
+                    r1: r1.clone(),
+                    r2: r2.clone(),
+                    vo,
+                    vi: vi_val,
+                    error_percent: error,
+                });
             }
         }
 
-        solutions.sort_by(|a, b| a.error_percent.partial_cmp(&b.error_percent).unwrap());
+        solutions.sort_by(|a, b| {
+            let sa = solution_score(a.error_percent, &a.r1.config, &series);
+            let sb = solution_score(b.error_percent, &b.r1.config, &series);
+            sa.partial_cmp(&sb).unwrap()
+        });
         solutions.truncate(count as usize);
         solutions
     })
