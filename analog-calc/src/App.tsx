@@ -1,50 +1,51 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import FilterCalculator from "./FilterCalculator";
+import NoiseCalculator from "./NoiseCalculator";
+import DividerCalculator from "./DividerCalculator";
+
+type Tab = "filter" | "noise" | "divider";
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: "filter", label: "RC滤波器" },
+  { key: "noise", label: "运放噪声" },
+  { key: "divider", label: "电阻分压" },
+];
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  const [activeTab, setActiveTab] = useState<Tab>("filter");
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b shadow-sm">
+        <div className="max-w-3xl mx-auto px-4 py-3">
+          <h1 className="text-xl font-bold">模拟计算器</h1>
+        </div>
+      </header>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className="max-w-3xl mx-auto px-4 py-4">
+        <nav className="flex gap-1 mb-6 border-b">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                activeTab === tab.key
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="bg-white rounded-lg shadow p-6">
+          {activeTab === "filter" && <FilterCalculator />}
+          {activeTab === "noise" && <NoiseCalculator />}
+          {activeTab === "divider" && <DividerCalculator />}
+        </div>
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    </div>
   );
 }
 
