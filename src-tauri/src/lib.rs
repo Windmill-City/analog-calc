@@ -260,6 +260,7 @@ async fn calculate_divider(
     series_weight: f64,
     config_weight: f64,
     error_weight: f64,
+    min_total_resistance: f64,
 ) -> Vec<DividerSolution> {
     tokio::task::spawn_blocking(move || {
         let base = get_series(&series);
@@ -294,11 +295,15 @@ async fn calculate_divider(
             if let Some((r1, computed, error)) =
                 find_best_r1(&search_set, ideal_r1, r2.value, vi, vo)
             {
+                let total = r1.value + r2.value;
+                if total < min_total_resistance {
+                    continue;
+                }
                 solutions.push(DividerSolution {
                     r1: r1.clone(),
                     r2: r2.clone(),
                     vo: computed,
-                    vi: vo * (r1.value + r2.value) / r2.value,
+                    vi: vo * total / r2.value,
                     error_percent: error,
                 });
             }
