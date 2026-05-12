@@ -8,6 +8,7 @@ export default function NoiseCalculator() {
   const [vnDensity, setVnDensity] = useState("10n")
   const [filterOrder, setFilterOrder] = useState(1)
   const [rcBandwidth, setRcBandwidth] = useState("100k")
+  const enbFactorStr = filterOrder === 0 ? "" : filterOrder === 1 ? "π/2" : filterOrder === 2 ? "π/4" : "π/8"
   const [result, setResult] = useState<number | null>(null)
 
   async function calc(
@@ -95,12 +96,13 @@ export default function NoiseCalculator() {
           </label>
           <input
             type="text"
-            className="mt-1 w-full border rounded px-2 py-1"
+            className={`mt-1 w-full border rounded px-2 py-1 ${filterOrder === 0 ? "opacity-40" : ""}`}
             value={rcBandwidth}
             onChange={(e) => setRcBandwidth(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             onBlur={() => calc(gbw, gain, vnDensity, filterOrder, rcBandwidth)}
             placeholder="e.g. 100k, 1M, 10k"
+            disabled={filterOrder === 0}
           />
         </div>
       </div>
@@ -108,6 +110,15 @@ export default function NoiseCalculator() {
       <div>
         <label className="block text-sm font-medium mb-1">输出滤波器阶数</label>
         <div className="flex gap-2">
+          <button
+            className={`px-3 py-1 rounded ${filterOrder === 0 ? "bg-blue-600 text-white" : "bg-gray-200"}`}
+            onClick={() => {
+              setFilterOrder(0)
+              calc(gbw, gain, vnDensity, 0, rcBandwidth)
+            }}
+          >
+            无滤波
+          </button>
           {[1, 2, 3].map((order) => (
             <button
               key={order}
@@ -129,7 +140,13 @@ export default function NoiseCalculator() {
             总输出噪声 V<sub>rms</sub>
           </p>
           <p className="text-xl font-mono">{formatSi(result, "V", 3)}</p>
-          <p className="text-xs text-gray-400">= {formatSi(result, "V", 4)}</p>
+          <p className="text-xs text-gray-400 font-mono">
+            {enbFactorStr ? (
+              <>V<sub>rms</sub> = V<sub>n</sub> × √(min(GBW/A<sub>v</sub>, f<sub>RC</sub> × {enbFactorStr}))</>
+            ) : (
+              <>V<sub>rms</sub> = V<sub>n</sub> × √(GBW/A<sub>v</sub>)</>
+            )}
+          </p>
         </div>
       )}
     </div>

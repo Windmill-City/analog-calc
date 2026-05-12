@@ -32,14 +32,18 @@ fn calculate_noise(
     rc_bandwidth: f64,
 ) -> f64 {
     let closed_loop_bw = gbw / gain;
-    let enb_factor = match filter_order {
-        1 => std::f64::consts::PI / 2.0,
-        2 => std::f64::consts::PI / 4.0,
-        3 => std::f64::consts::PI / 8.0,
-        _ => std::f64::consts::PI / 2.0,
+    let effective_bw = if filter_order == 0 {
+        closed_loop_bw
+    } else {
+        let enb_factor = match filter_order {
+            1 => std::f64::consts::PI / 2.0,
+            2 => std::f64::consts::PI / 4.0,
+            3 => std::f64::consts::PI / 8.0,
+            _ => std::f64::consts::PI / 2.0,
+        };
+        let noise_bw = rc_bandwidth * enb_factor;
+        closed_loop_bw.min(noise_bw)
     };
-    let noise_bw = rc_bandwidth * enb_factor;
-    let effective_bw = closed_loop_bw.min(noise_bw);
     vn_density * 1e-9 * effective_bw.sqrt()
 }
 
