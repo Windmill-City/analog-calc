@@ -131,7 +131,7 @@ fn build_search_set(
 }
 
 #[tauri::command]
-fn calculate_divider(
+async fn calculate_divider(
     vi: f64,
     target_vo: f64,
     series: String,
@@ -139,33 +139,74 @@ fn calculate_divider(
     use_parallel: bool,
     count: u32,
 ) -> Vec<DividerSolution> {
-    let base = get_series(&series);
-    let values = expand_values(base, 0, 6);
-    let search_set = build_search_set(&values, use_series, use_parallel);
+    tokio::task::spawn_blocking(move || {
+        let (use_series, use_parallel) = if series == "E6" || series == "E12" {
+            (use_series, use_parallel)
+        } else {
+            (false, false)
+        };
+        let base = get_series(&series);
+        let values = expand_values(base, 0, 6);
+        let search_set = build_search_set(&values, use_series, use_parallel);
 
-    let mut solutions: Vec<DividerSolution> = Vec::new();
-    for r1 in &search_set {
+        if target_vo <= 0.0 || target_vo >= vi {
+            return vec![];
+        }
+
+        let target_ratio = target_vo / vi;
+        let mut solutions: Vec<DividerSolution> = Vec::new();
+
         for r2 in &search_set {
-            let vo = vi * r2.value / (r1.value + r2.value);
-            let error_percent = if target_vo != 0.0 {
-                ((vo - target_vo) / target_vo * 100.0).abs()
-            } else {
-                vo.abs() * 100.0
+            let ideal_r1 = r2.value * (1.0 / target_ratio - 1.0);
+
+            let idx = match search_set.binary_search_by(|probe| {
+                probe.value.partial_cmp(&ideal_r1).unwrap_or(std::cmp::Ordering::Less)
+            }) {
+                Ok(i) => i,
+                Err(i) => i,
             };
-            if error_percent < 5.0 {
-                solutions.push(DividerSolution {
-                    r1: r1.clone(),
-                    r2: r2.clone(),
-                    vo,
-                    error_percent,
-                });
+
+            for i in idx..search_set.len() {
+                let r1 = &search_set[i];
+                let vo = vi * r2.value / (r1.value + r2.value);
+                let error = ((vo - target_vo) / target_vo * 100.0).abs();
+                if error < 5.0 {
+                    solutions.push(DividerSolution {
+                        r1: r1.clone(),
+                        r2: r2.clone(),
+                        vo,
+                        error_percent: error,
+                    });
+                } else {
+                    break;
+                }
+            }
+
+            let mut i = idx as isize - 1;
+            while i >= 0 {
+                let r1 = &search_set[i as usize];
+                let vo = vi * r2.value / (r1.value + r2.value);
+                let error = ((vo - target_vo) / target_vo * 100.0).abs();
+                if error < 5.0 {
+                    solutions.push(DividerSolution {
+                        r1: r1.clone(),
+                        r2: r2.clone(),
+                        vo,
+                        error_percent: error,
+                    });
+                } else {
+                    break;
+                }
+                i -= 1;
             }
         }
-    }
 
-    solutions.sort_by(|a, b| a.error_percent.partial_cmp(&b.error_percent).unwrap());
-    solutions.truncate(count as usize);
-    solutions
+        solutions.sort_by(|a, b| a.error_percent.partial_cmp(&b.error_percent).unwrap());
+        solutions.truncate(count as usize);
+        solutions
+    })
+    .await
+    .unwrap()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
