@@ -543,10 +543,7 @@ export default function DividerCalculator() {
         )}
         {!pending && solutions.length > 0 && (
           <div>
-            <p className="text-sm text-gray-500 mb-2">
-              找到 {solutions.length} 个方案
-            </p>
-            <div className="overflow-auto h-80">
+            <div className="overflow-auto h-90">
               <table className="w-full text-sm border-collapse">
                 <thead className="top-0 bg-gray-100 z-10">
                   <tr>

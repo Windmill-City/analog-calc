@@ -444,38 +444,33 @@ export default function ResistorFinder() {
           </div>
         )}
         {!pending && solutions.length > 0 && (
-          <div>
-            <p className="text-sm text-gray-500 mb-2">
-              找到 {solutions.length} 个方案
-            </p>
-            <div className="overflow-auto h-90">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border px-2 py-1 text-left">#</th>
-                    <th className="border px-2 py-1 text-left">阻值</th>
-                    <th className="border px-2 py-1 text-left">构成</th>
-                    <th className="border px-2 py-1 text-left">误差</th>
+          <div className="overflow-auto h-90">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border px-2 py-1 text-left">#</th>
+                  <th className="border px-2 py-1 text-left">阻值</th>
+                  <th className="border px-2 py-1 text-left">构成</th>
+                  <th className="border px-2 py-1 text-left">误差</th>
+                </tr>
+              </thead>
+              <tbody>
+                {solutions.map((sol, i) => (
+                  <tr key={i} className="hover:bg-gray-50">
+                    <td className="border px-2 py-1">{i + 1}</td>
+                    <td className="border px-2 py-1 font-mono">
+                      {formatResistance(sol.value)}
+                    </td>
+                    <td className="border px-2 py-1 text-xs">
+                      <ResistorCell info={sol} />
+                    </td>
+                    <td className="border px-2 py-1 font-mono">
+                      {sol.error_percent.toFixed(2)}%
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {solutions.map((sol, i) => (
-                    <tr key={i} className="hover:bg-gray-50">
-                      <td className="border px-2 py-1">{i + 1}</td>
-                      <td className="border px-2 py-1 font-mono">
-                        {formatResistance(sol.value)}
-                      </td>
-                      <td className="border px-2 py-1 text-xs">
-                        <ResistorCell info={sol} />
-                      </td>
-                      <td className="border px-2 py-1 font-mono">
-                        {sol.error_percent.toFixed(2)}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
         {!pending && solutions.length === 0 && target && (
