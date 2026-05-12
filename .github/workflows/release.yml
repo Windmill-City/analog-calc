@@ -48,7 +48,7 @@ jobs:
 
       - name: generate changelog
         id: changelog
-        uses: uncenter/git-cliff-action@v4
+        uses: orhun/git-cliff-action@v4
         with:
           args: --current --strip header
 
