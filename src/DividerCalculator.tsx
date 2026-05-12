@@ -295,48 +295,50 @@ export default function DividerCalculator() {
           <p className="text-sm text-gray-500 mb-2">
             找到 {solutions.length} 个方案
           </p>
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border px-2 py-1 text-left">#</th>
-                <th className="border px-2 py-1 text-left">
-                  R<sub>1</sub>
-                </th>
-                <th className="border px-2 py-1 text-left">
-                  R<sub>2</sub>
-                </th>
-                <th className="border px-2 py-1 text-left">
-                  V<sub>o</sub>
-                </th>
-                <th className="border px-2 py-1 text-left">
-                  V<sub>i</sub>
-                </th>
-                <th className="border px-2 py-1 text-left">误差</th>
-              </tr>
-            </thead>
-            <tbody>
-              {solutions.map((sol, i) => (
-                <tr key={i} className="hover:bg-gray-50">
-                  <td className="border px-2 py-1">{i + 1}</td>
-                  <td className="border px-2 py-1 text-xs">
-                    <ResistorCell info={sol.r1} />
-                  </td>
-                  <td className="border px-2 py-1 text-xs">
-                    <ResistorCell info={sol.r2} />
-                  </td>
-                  <td className="border px-2 py-1 font-mono">
-                    {formatSi(sol.vo, "V", 4)}
-                  </td>
-                  <td className="border px-2 py-1 font-mono">
-                    {formatSi(sol.vi, "V", 4)}
-                  </td>
-                  <td className="border px-2 py-1 font-mono">
-                    {sol.error_percent.toFixed(2)}%
-                  </td>
+          <div className="overflow-y-auto max-h-96">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border px-2 py-1 text-left">#</th>
+                  <th className="border px-2 py-1 text-left">
+                    R<sub>1</sub>
+                  </th>
+                  <th className="border px-2 py-1 text-left">
+                    R<sub>2</sub>
+                  </th>
+                  <th className="border px-2 py-1 text-left">
+                    V<sub>o</sub>
+                  </th>
+                  <th className="border px-2 py-1 text-left">
+                    V<sub>i</sub>
+                  </th>
+                  <th className="border px-2 py-1 text-left">误差</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {solutions.map((sol, i) => (
+                  <tr key={i} className="hover:bg-gray-50">
+                    <td className="border px-2 py-1">{i + 1}</td>
+                    <td className="border px-2 py-1 text-xs">
+                      <ResistorCell info={sol.r1} />
+                    </td>
+                    <td className="border px-2 py-1 text-xs">
+                      <ResistorCell info={sol.r2} />
+                    </td>
+                    <td className="border px-2 py-1 font-mono">
+                      {formatSi(sol.vo, "V", 4)}
+                    </td>
+                    <td className="border px-2 py-1 font-mono">
+                      {formatSi(sol.vi, "V", 4)}
+                    </td>
+                    <td className="border px-2 py-1 font-mono">
+                      {sol.error_percent.toFixed(2)}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <p className="text-xs text-gray-400 mt-2">
             V<sub>o</sub> = V<sub>i</sub> × R<sub>2</sub> / (R<sub>1</sub> + R
             <sub>2</sub>)
