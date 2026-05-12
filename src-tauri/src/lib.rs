@@ -94,6 +94,11 @@ struct DividerSolution {
     error_percent: f64,
 }
 
+fn is_e6_or_e12_mantissa(v: f64) -> bool {
+    let m = normalize_mantissa(v);
+    E12.iter().any(|&e| (normalize_mantissa(e) - m).abs() < 0.005)
+}
+
 fn get_series(series: &str) -> &[f64] {
     match series {
         "E6" => E6,
@@ -115,10 +120,15 @@ fn expand_values(base: &[f64], min_decades: i32, max_decades: i32) -> Vec<f64> {
     values
 }
 
-fn build_search_set(values: &[f64], use_series: bool, use_parallel: bool) -> Vec<ResistorInfo> {
+fn build_search_set(
+    all_values: &[f64],
+    combo_values: &[f64],
+    use_series: bool,
+    use_parallel: bool,
+) -> Vec<ResistorInfo> {
     let mut entries: Vec<(u64, ResistorInfo)> = Vec::new();
 
-    for &v in values {
+    for &v in all_values {
         let key = (v * 1e6).round() as u64;
         entries.push((
             key,
@@ -132,8 +142,8 @@ fn build_search_set(values: &[f64], use_series: bool, use_parallel: bool) -> Vec
     }
 
     if use_series {
-        for &a in values {
-            for &b in values {
+        for &a in combo_values {
+            for &b in combo_values {
                 let v = a + b;
                 let key = (v * 1e6).round() as u64;
                 entries.push((
@@ -153,8 +163,8 @@ fn build_search_set(values: &[f64], use_series: bool, use_parallel: bool) -> Vec
     }
 
     if use_parallel {
-        for &a in values {
-            for &b in values {
+        for &a in combo_values {
+            for &b in combo_values {
                 let v = a * b / (a + b);
                 let key = (v * 1e6).round() as u64;
                 entries.push((
@@ -252,14 +262,24 @@ async fn calculate_divider(
     error_weight: f64,
 ) -> Vec<DividerSolution> {
     tokio::task::spawn_blocking(move || {
-        let (use_series, use_parallel) = if series == "E6" || series == "E12" {
-            (use_series, use_parallel)
-        } else {
-            (false, false)
-        };
         let base = get_series(&series);
-        let values = expand_values(base, 0, 6);
-        let search_set = build_search_set(&values, use_series, use_parallel);
+        let all_values = expand_values(base, 0, 6);
+
+        let combo_values: Vec<f64> = if use_series || use_parallel {
+            if series == "E24" || series == "E96" {
+                all_values
+                    .iter()
+                    .filter(|&&v| is_e6_or_e12_mantissa(v))
+                    .copied()
+                    .collect()
+            } else {
+                all_values.clone()
+            }
+        } else {
+            all_values.clone()
+        };
+
+        let search_set = build_search_set(&all_values, &combo_values, use_series, use_parallel);
 
         if !(vo > 0.0 && vo < vi) {
             return vec![];

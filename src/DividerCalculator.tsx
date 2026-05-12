@@ -72,10 +72,10 @@ function ResistorCell({ info }: { info: ResistorInfo }) {
 
 export default function DividerCalculator() {
   const [vi, setVi] = useState("5")
-  const [targetVo, setTargetVo] = useState("2.5")
-  const [series, setSeries] = useState("E24")
+  const [targetVo, setTargetVo] = useState("0.8")
+  const [series, setSeries] = useState("E12")
   const [useSeries, setUseSeries] = useState(false)
-  const [useParallel, setUseParallel] = useState(false)
+  const [useParallel, setUseParallel] = useState(true)
   const [solutions, setSolutions] = useState<Solution[]>([])
   const [pending, setPending] = useState(false)
   const [seriesWeight, setSeriesWeight] = useState(0.1)
@@ -186,8 +186,7 @@ export default function DividerCalculator() {
         <div className="flex items-center gap-3 mt-5">
           <button
             type="button"
-            className={`px-3 py-1 rounded text-sm ${useSeries && (series === "E6" || series === "E12") ? "bg-green-700 text-white" : "bg-gray-200 text-gray-700"}`}
-            disabled={series !== "E6" && series !== "E12"}
+            className={`px-3 py-1 rounded text-sm ${useSeries ? "bg-green-700 text-white" : "bg-gray-200 text-gray-700"}`}
             onClick={() => {
               const v = !useSeries
               setUseSeries(v)
@@ -198,8 +197,7 @@ export default function DividerCalculator() {
           </button>
           <button
             type="button"
-            className={`px-3 py-1 rounded text-sm ${useParallel && (series === "E6" || series === "E12") ? "bg-green-700 text-white" : "bg-gray-200 text-gray-700"}`}
-            disabled={series !== "E6" && series !== "E12"}
+            className={`px-3 py-1 rounded text-sm ${useParallel ? "bg-green-700 text-white" : "bg-gray-200 text-gray-700"}`}
             onClick={() => {
               const v = !useParallel
               setUseParallel(v)
