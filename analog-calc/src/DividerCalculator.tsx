@@ -89,6 +89,7 @@ export default function DividerCalculator() {
             className="mt-1 w-full border rounded px-2 py-1"
             value={vi}
             onChange={(e) => setVi(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             onBlur={() => calc(vi, targetVo, series, useSeries, useParallel)}
             placeholder="e.g. 5, 3.3, 100m"
           />
@@ -102,6 +103,7 @@ export default function DividerCalculator() {
             className="mt-1 w-full border rounded px-2 py-1"
             value={targetVo}
             onChange={(e) => setTargetVo(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             onBlur={() => calc(vi, targetVo, series, useSeries, useParallel)}
             placeholder="e.g. 2.5, 1.8, 500m"
           />

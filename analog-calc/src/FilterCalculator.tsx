@@ -87,6 +87,7 @@ export default function FilterCalculator() {
                   className="w-full border rounded px-2 py-1"
                   value={row.r}
                   onChange={(e) => updateRow(row.id, "r", e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
                   placeholder="R (Ω)"
                 />
                 <input
@@ -94,6 +95,7 @@ export default function FilterCalculator() {
                   className="w-full border rounded px-2 py-1"
                   value={row.c}
                   onChange={(e) => updateRow(row.id, "c", e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
                   placeholder="C (F)"
                 />
               </div>

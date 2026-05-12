@@ -41,6 +41,7 @@ export default function NoiseCalculator() {
             className="mt-1 w-full border rounded px-2 py-1"
             value={gbw}
             onChange={(e) => setGbw(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             onBlur={() => calc(gbw, gain, vnDensity, filterOrder, rcBandwidth)}
             placeholder="e.g. 1M, 10M, 100k"
           />
@@ -52,6 +53,7 @@ export default function NoiseCalculator() {
             className="mt-1 w-full border rounded px-2 py-1"
             value={gain}
             onChange={(e) => setGain(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             onBlur={() => calc(gbw, gain, vnDensity, filterOrder, rcBandwidth)}
             placeholder="e.g. 10, 100"
           />
@@ -63,6 +65,7 @@ export default function NoiseCalculator() {
             className="mt-1 w-full border rounded px-2 py-1"
             value={vnDensity}
             onChange={(e) => setVnDensity(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             onBlur={() => calc(gbw, gain, vnDensity, filterOrder, rcBandwidth)}
             placeholder="e.g. 10n, 0.1u, 1e-8"
           />
@@ -74,6 +77,7 @@ export default function NoiseCalculator() {
             className="mt-1 w-full border rounded px-2 py-1"
             value={rcBandwidth}
             onChange={(e) => setRcBandwidth(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             onBlur={() => calc(gbw, gain, vnDensity, filterOrder, rcBandwidth)}
             placeholder="e.g. 100k, 1M, 10k"
           />
