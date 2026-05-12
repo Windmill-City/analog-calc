@@ -63,7 +63,12 @@ export default function FilterCalculator() {
   }
 
   function addRow() {
-    setRows((prev) => [...prev, { id: nextId++, r: "", c: "" }])
+    setRows((prev) => {
+      const last = prev[prev.length - 1]
+      const r = last ? last.r : ""
+      const c = last ? last.c : ""
+      return [...prev, { id: nextId++, r, c }]
+    })
   }
 
   function removeRow(id: number) {
@@ -146,10 +151,24 @@ export default function FilterCalculator() {
           <div>
             <p className="text-sm text-gray-500">总截止频率</p>
             <p className="text-xl font-mono">{formatSi(totalFc, "Hz", 3)}</p>
+            <p className="text-xs text-gray-400 font-mono">
+              {fcList.length === 1 ? (
+                <>f<sub>c</sub> = 1 / (2πRC)</>
+              ) : (
+                <>|H(f)|² = Π 1/(1+(f/f<sub>ci</sub>)²), |H(f<sub>c</sub>)|² = 0.5</>
+              )}
+            </p>
           </div>
           <div>
             <p className="text-sm text-gray-500">等效噪声带宽 (ENBW)</p>
             <p className="text-xl font-mono">{formatSi(enbwVal, "Hz", 3)}</p>
+            <p className="text-xs text-gray-400 font-mono">
+              {fcList.length === 1 ? (
+                <>ENBW = f<sub>c</sub> × π/2</>
+              ) : (
+                <>ENBW = ∫₀^∞ |H(f)|² df</>
+              )}
+            </p>
           </div>
         </div>
       )}
