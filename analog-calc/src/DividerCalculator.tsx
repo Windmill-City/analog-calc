@@ -191,7 +191,9 @@ export default function DividerCalculator() {
             </tbody>
           </table>
           <p className="text-xs text-gray-400 mt-2">
-            V<sub>o</sub> = V<sub>i</sub> × R<sub>2</sub> / (R<sub>1</sub> + R<sub>2</sub>)<br />            V<sub>i</sub> = V<sub>o</sub> × (R<sub>1</sub> + R<sub>2</sub>) / R<sub>2</sub>
+            V<sub>o</sub> = V<sub>i</sub> × R<sub>2</sub> / (R<sub>1</sub> + R<sub>2</sub>)
+            <br />
+            V<sub>i</sub> = V<sub>o</sub> × (R<sub>1</sub> + R<sub>2</sub>) / R<sub>2</sub>
           </p>
         </div>
       )}
