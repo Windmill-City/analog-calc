@@ -16,8 +16,6 @@ interface Solution {
   error_percent: number;
 }
 
-type DividerMode = "forward" | "reverse";
-
 const SERIES = ["E6", "E12", "E24", "E96"];
 
 const CONFIG_LABEL: Record<string, string> = {
@@ -35,7 +33,6 @@ function formatResistorComposition(info: ResistorInfo): string {
 }
 
 export default function DividerCalculator() {
-  const [mode, setMode] = useState<DividerMode>("forward");
   const [vi, setVi] = useState("5");
   const [targetVo, setTargetVo] = useState("2.5");
   const [series, setSeries] = useState("E24");
@@ -45,19 +42,14 @@ export default function DividerCalculator() {
   const [pending, setPending] = useState(false);
   const calcId = useRef(0);
 
-  async function calc(v: string, tv: string, s: string, us: boolean, up: boolean, m?: DividerMode) {
-    const modeVal = m ?? mode;
+  async function calc(v: string, tv: string, s: string, us: boolean, up: boolean) {
     const vv = parseWithUnit(v);
     const tvv = parseWithUnit(tv);
     if (isNaN(vv) || isNaN(tvv) || vv <= 0 || tvv <= 0) {
       setSolutions([]);
       return;
     }
-    if (modeVal === "forward" && tvv >= vv) {
-      setSolutions([]);
-      return;
-    }
-    if (modeVal === "reverse" && tvv <= vv) {
+    if (tvv >= vv) {
       setSolutions([]);
       return;
     }
@@ -71,7 +63,6 @@ export default function DividerCalculator() {
         useSeries: us,
         useParallel: up,
         count: 10,
-        reverse: modeVal === "reverse",
       });
       if (id === calcId.current) {
         setSolutions(result);
@@ -82,57 +73,36 @@ export default function DividerCalculator() {
     }
   }
 
-  useEffect(() => { calc(vi, targetVo, series, useSeries, useParallel, mode); }, []);
-
-  function switchMode(m: DividerMode) {
-    setMode(m);
-    setSolutions([]);
-    calc(vi, targetVo, series, useSeries, useParallel, m);
-  }
+  useEffect(() => { calc(vi, targetVo, series, useSeries, useParallel); }, []);
 
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">电阻分压计算器</h2>
 
-      <div className="flex gap-2 mb-2">
-        <button
-          className={`px-4 py-1.5 rounded text-sm font-medium ${mode === "forward" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
-          onClick={() => switchMode("forward")}
-        >
-          V<sub>o</sub> ← V<sub>i</sub>
-        </button>
-        <button
-          className={`px-4 py-1.5 rounded text-sm font-medium ${mode === "reverse" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
-          onClick={() => switchMode("reverse")}
-        >
-          V<sub>i</sub> ← V<sub>o</sub>
-        </button>
-      </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium">
-            {mode === "forward" ? "输入电压 V" : "输出电压 V"}<sub>{mode === "forward" ? "i" : "o"}</sub> (V)
+            输入电压 V<sub>i</sub> (V)
           </label>
           <input
             type="text"
             className="mt-1 w-full border rounded px-2 py-1"
             value={vi}
             onChange={(e) => setVi(e.target.value)}
-            onBlur={() => calc(vi, targetVo, series, useSeries, useParallel, mode)}
+            onBlur={() => calc(vi, targetVo, series, useSeries, useParallel)}
             placeholder="e.g. 5, 3.3, 100m"
           />
         </div>
         <div>
           <label className="block text-sm font-medium">
-            目标电压 V<sub>{mode === "forward" ? "o" : "i"}</sub> (V)
+            目标电压 V<sub>o</sub> (V)
           </label>
           <input
             type="text"
             className="mt-1 w-full border rounded px-2 py-1"
             value={targetVo}
             onChange={(e) => setTargetVo(e.target.value)}
-            onBlur={() => calc(vi, targetVo, series, useSeries, useParallel, mode)}
+            onBlur={() => calc(vi, targetVo, series, useSeries, useParallel)}
             placeholder="e.g. 2.5, 1.8, 500m"
           />
         </div>
@@ -150,7 +120,7 @@ export default function DividerCalculator() {
                   setSeries(s);
                   const combo = s === "E6" || s === "E12";
                   if (!combo) { setUseSeries(false); setUseParallel(false); }
-                  calc(vi, targetVo, s, combo && useSeries, combo && useParallel, mode);
+                  calc(vi, targetVo, s, combo && useSeries, combo && useParallel);
                 }}
               >
                 {s}
@@ -164,7 +134,7 @@ export default function DividerCalculator() {
               type="checkbox"
               checked={useSeries}
               disabled={series !== "E6" && series !== "E12"}
-              onChange={(e) => { const v = e.target.checked; setUseSeries(v); calc(vi, targetVo, series, v, useParallel, mode); }}
+              onChange={(e) => { const v = e.target.checked; setUseSeries(v); calc(vi, targetVo, series, v, useParallel); }}
             />
             <span className={`text-sm ${series !== "E6" && series !== "E12" ? "text-gray-300" : ""}`}>允许串联</span>
           </label>
@@ -173,7 +143,7 @@ export default function DividerCalculator() {
               type="checkbox"
               checked={useParallel}
               disabled={series !== "E6" && series !== "E12"}
-              onChange={(e) => { const v = e.target.checked; setUseParallel(v); calc(vi, targetVo, series, useSeries, v, mode); }}
+              onChange={(e) => { const v = e.target.checked; setUseParallel(v); calc(vi, targetVo, series, useSeries, v); }}
             />
             <span className={`text-sm ${series !== "E6" && series !== "E12" ? "text-gray-300" : ""}`}>允许并联</span>
           </label>
@@ -192,9 +162,7 @@ export default function DividerCalculator() {
       {!pending && solutions.length > 0 && (
         <div>
           <p className="text-sm text-gray-500 mb-2">
-            {mode === "forward"
-              ? `找到 ${solutions.length} 个方案 (V\u2095 = ${vi} 固定, 目标 V\u2092 = ${targetVo})`
-              : `找到 ${solutions.length} 个方案 (V\u2092 = ${vi} 固定, 目标 V\u2095 = ${targetVo})`}
+            找到 {solutions.length} 个方案
           </p>
           <table className="w-full text-sm border-collapse">
             <thead>
@@ -221,9 +189,7 @@ export default function DividerCalculator() {
             </tbody>
           </table>
           <p className="text-xs text-gray-400 mt-2">
-            {mode === "forward"
-              ? "V\u2092 = V\u2095 \u00d7 R\u2082 / (R\u2081 + R\u2082)"
-              : "V\u2095 = V\u2092 \u00d7 (R\u2081 + R\u2082) / R\u2082"}
+            V<sub>o</sub> = V<sub>i</sub> × R<sub>2</sub> / (R<sub>1</sub> + R<sub>2</sub>)
           </p>
         </div>
       )}

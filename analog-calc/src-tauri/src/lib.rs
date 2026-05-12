@@ -149,12 +149,9 @@ fn solution_score(error: f64, config: &str, series: &str) -> f64 {
 fn find_best_r1<'a>(
     search_set: &'a [ResistorInfo],
     ideal_r1: f64,
-    // forward: vi * r2_val / (r1.value + r2_val), target: given target_vo
-    // reverse: known_vo * (r1.value + r2_val) / r2_val, target: given target_vi
     r2_val: f64,
     known: f64,
     target: f64,
-    reverse_mode: bool,
 ) -> Option<(&'a ResistorInfo, f64, f64)> {
     let idx = match search_set.binary_search_by(|probe| {
         probe.value.partial_cmp(&ideal_r1).unwrap_or(std::cmp::Ordering::Less)
@@ -170,11 +167,7 @@ fn find_best_r1<'a>(
             continue;
         }
         let r1 = &search_set[ci];
-        let computed = if reverse_mode {
-            known * (r1.value + r2_val) / r2_val
-        } else {
-            known * r2_val / (r1.value + r2_val)
-        };
+        let computed = known * r2_val / (r1.value + r2_val);
         let error = ((computed - target) / target * 100.0).abs();
         if error < 5.0 && best.as_ref().map_or(true, |b| error < b.2) {
             best = Some((r1, computed, error));
@@ -192,7 +185,6 @@ async fn calculate_divider(
     use_series: bool,
     use_parallel: bool,
     count: u32,
-    reverse: bool,
 ) -> Vec<DividerSolution> {
     tokio::task::spawn_blocking(move || {
         let (use_series, use_parallel) = if series == "E6" || series == "E12" {
@@ -204,39 +196,24 @@ async fn calculate_divider(
         let values = expand_values(base, 0, 6);
         let search_set = build_search_set(&values, use_series, use_parallel);
 
-        let (known, target, valid) = if reverse {
-            (vi, target_vo, vi > 0.0 && target_vo > vi)
-        } else {
-            (vi, target_vo, target_vo > 0.0 && target_vo < vi)
-        };
-
-        if !valid {
+        if !(target_vo > 0.0 && target_vo < vi) {
             return vec![];
         }
 
-        let target_ratio = if reverse { target / known } else { target / known };
+        let target_ratio = target_vo / vi;
         let mut solutions: Vec<DividerSolution> = Vec::new();
 
         for r2 in &search_set {
-            let ideal_r1 = if reverse {
-                r2.value * (target_ratio - 1.0)
-            } else {
-                r2.value * (1.0 / target_ratio - 1.0)
-            };
+            let ideal_r1 = r2.value * (1.0 / target_ratio - 1.0);
 
             if let Some((r1, computed, error)) =
-                find_best_r1(&search_set, ideal_r1, r2.value, known, target, reverse)
+                find_best_r1(&search_set, ideal_r1, r2.value, vi, target_vo)
             {
-                let (vo, vi_val) = if reverse {
-                    (known, computed)
-                } else {
-                    (computed, known)
-                };
                 solutions.push(DividerSolution {
                     r1: r1.clone(),
                     r2: r2.clone(),
-                    vo,
-                    vi: vi_val,
+                    vo: computed,
+                    vi,
                     error_percent: error,
                 });
             }
