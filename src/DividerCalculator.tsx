@@ -516,9 +516,9 @@ export default function DividerCalculator() {
         </button>
       </details>
 
-      <div className="h-96">
+      <div className="h-96 overflow-hidden">
         {pending && (
-          <div className="flex items-center justify-center py-8 text-gray-400">
+          <div className="h-full flex items-center justify-center py-8 text-gray-400">
             <svg
               className="animate-spin h-6 w-6 mr-2"
               viewBox="0 0 24 24"
@@ -542,8 +542,8 @@ export default function DividerCalculator() {
           </div>
         )}
         {!pending && solutions.length > 0 && (
-          <div>
-            <div className="overflow-auto h-90">
+          <div className="h-full flex flex-col">
+            <div className="flex-1 overflow-auto">
               <table className="w-full text-sm border-collapse">
                 <thead className="top-0 bg-gray-100 z-10">
                   <tr>
