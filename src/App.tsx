@@ -16,12 +16,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b shadow-sm">
-        <div className="max-w-3xl mx-auto px-4 py-3">
-          <h1 className="text-xl font-bold">模拟计算器</h1>
-        </div>
-      </header>
-
       <div className="max-w-3xl mx-auto px-4 py-4">
         <nav className="flex gap-1 mb-6 border-b">
           {TABS.map((tab) => (
