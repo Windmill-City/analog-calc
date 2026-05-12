@@ -4,10 +4,10 @@ import { formatSi, parseWithUnit } from "./units"
 
 export default function NoiseCalculator() {
   const [gbw, setGbw] = useState("1M")
-  const [gain, setGain] = useState("10")
+  const [gain, setGain] = useState("2")
   const [vnDensity, setVnDensity] = useState("10n")
   const [filterOrder, setFilterOrder] = useState(1)
-  const [rcBandwidth, setRcBandwidth] = useState("100k")
+  const [rcBandwidth, setRcBandwidth] = useState("1k")
   const enbFactorStr = filterOrder === 0 ? "" : filterOrder === 1 ? "π/2" : filterOrder === 2 ? "π/4" : "π/8"
   const [result, setResult] = useState<number | null>(null)
 

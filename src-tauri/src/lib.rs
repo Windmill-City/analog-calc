@@ -44,7 +44,7 @@ fn calculate_noise(
         let noise_bw = rc_bandwidth * enb_factor;
         closed_loop_bw.min(noise_bw)
     };
-    vn_density * 1e-9 * effective_bw.sqrt()
+    vn_density * effective_bw.sqrt()
 }
 
 fn normalize_mantissa(v: f64) -> f64 {
