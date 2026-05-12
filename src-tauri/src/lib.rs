@@ -249,7 +249,7 @@ async fn calculate_divider(
                     r1: r1.clone(),
                     r2: r2.clone(),
                     vo: computed,
-                    vi,
+                    vi: vo * (r1.value + r2.value) / r2.value,
                     error_percent: error,
                 });
             }
