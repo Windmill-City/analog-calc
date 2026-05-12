@@ -331,6 +331,80 @@ async fn calculate_divider(
     .unwrap()
 }
 
+#[derive(Debug, Serialize)]
+struct ResistorFinderSolution {
+    value: f64,
+    components: Vec<f64>,
+    component_series: Vec<String>,
+    config: String,
+    error_percent: f64,
+}
+
+#[tauri::command]
+async fn find_resistor_values(
+    target: f64,
+    series: String,
+    use_series: bool,
+    use_parallel: bool,
+    count: u32,
+    max_error: f64,
+    series_weight: f64,
+    config_weight: f64,
+    error_weight: f64,
+) -> Vec<ResistorFinderSolution> {
+    tokio::task::spawn_blocking(move || {
+        let base = get_series(&series);
+        let all_values = expand_values(base, 0, 6);
+
+        let combo_values: Vec<f64> = if use_series || use_parallel {
+            if series == "E24" || series == "E96" {
+                all_values
+                    .iter()
+                    .filter(|&&v| is_e6_or_e12_mantissa(v))
+                    .copied()
+                    .collect()
+            } else {
+                all_values.clone()
+            }
+        } else {
+            all_values.clone()
+        };
+
+        let search_set = build_search_set(&all_values, &combo_values, use_series, use_parallel);
+
+        let mut solutions: Vec<ResistorFinderSolution> = search_set
+            .iter()
+            .map(|r| {
+                let error = ((r.value - target) / target * 100.0).abs();
+                ResistorFinderSolution {
+                    value: r.value,
+                    components: r.components.clone(),
+                    component_series: r.component_series.clone(),
+                    config: r.config.clone(),
+                    error_percent: error,
+                }
+            })
+            .filter(|s| s.error_percent <= max_error)
+            .collect();
+
+        solutions.sort_by(|a, b| {
+            let a_series_rank = best_series_rank(&a.component_series) as f64;
+            let b_series_rank = best_series_rank(&b.component_series) as f64;
+            let a_config_rank = config_rank(&a.config) as f64;
+            let b_config_rank = config_rank(&b.config) as f64;
+            let sa =
+                a_series_rank * series_weight + a_config_rank * config_weight + a.error_percent * error_weight;
+            let sb =
+                b_series_rank * series_weight + b_config_rank * config_weight + b.error_percent * error_weight;
+            sa.partial_cmp(&sb).unwrap()
+        });
+        solutions.truncate(count as usize);
+        solutions
+    })
+    .await
+    .unwrap()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -338,7 +412,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             calculate_cutoff,
             calculate_noise,
-            calculate_divider
+            calculate_divider,
+            find_resistor_values
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

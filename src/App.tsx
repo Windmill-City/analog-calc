@@ -2,13 +2,15 @@ import { useState } from "react"
 import DividerCalculator from "./DividerCalculator"
 import FilterCalculator from "./FilterCalculator"
 import NoiseCalculator from "./NoiseCalculator"
+import ResistorFinder from "./ResistorFinder"
 
-type Tab = "filter" | "noise" | "divider"
+type Tab = "filter" | "noise" | "divider" | "resistor"
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "filter", label: "RC滤波器" },
   { key: "noise", label: "运放噪声" },
   { key: "divider", label: "电阻分压" },
+  { key: "resistor", label: "电阻取值" },
 ]
 
 function App() {
@@ -37,6 +39,7 @@ function App() {
           {activeTab === "filter" && <FilterCalculator />}
           {activeTab === "noise" && <NoiseCalculator />}
           {activeTab === "divider" && <DividerCalculator />}
+          {activeTab === "resistor" && <ResistorFinder />}
         </div>
       </div>
     </div>

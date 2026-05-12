@@ -9,6 +9,7 @@
 | **RC滤波器** | 支持多级 RC 滤波器，计算每级截止频率、整体截止频率，以及等效噪声带宽（ENBW，基于 Simpson 积分） |
 | **运放噪声** | 根据 GBW、增益、噪声密度、滤波器阶数计算运放电路总 RMS 输出噪声 |
 | **电阻分压** | 在 E6/E12/E24/E96 系列中搜索最优分压电阻组合，支持串联/并联扩展，可配置权重评分 |
+| **电阻取值** | 输入目标电阻值，从 E6/E12/E24/E96 系列中找出最接近的单电阻或串联/并联组合 |
 
 ## 技术栈
 
@@ -47,10 +48,11 @@ src/                         # React 前端
 ├── units.ts                 # SI 单位解析与格式化工具
 ├── FilterCalculator.tsx     # RC 滤波器计算
 ├── NoiseCalculator.tsx      # 运放噪声计算
+├── ResistorFinder.tsx       # 电阻取值
 └── DividerCalculator.tsx    # 电阻分压计算
 
 src-tauri/                   # Rust 后端
-├── src/lib.rs               # 核心命令（calculate_cutoff / noise / divider）
+├── src/lib.rs               # 核心命令（calculate_cutoff / noise / divider / find_resistor_values）
 ├── src/main.rs              # 程序入口
 └── tauri.conf.json          # Tauri 配置
 ```
