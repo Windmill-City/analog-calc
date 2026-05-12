@@ -232,8 +232,13 @@ export default function DividerCalculator() {
       <details className="text-sm text-gray-600">
         <summary className="cursor-pointer select-none">排序权重</summary>
         <div className="mt-2 space-y-2">
-          <label className="flex items-center gap-3">
-            <span className="w-24 shrink-0">系列权重</span>
+          <label className="flex items-center gap-3 group relative">
+            <span className="w-24 shrink-0 cursor-help border-b border-dotted border-gray-400">系列权重</span>
+            <div className="absolute left-0 top-full mt-1 z-10 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-3 py-2 w-72 shadow-lg pointer-events-none">
+              偏好常见系列（E6 &gt; E12 &gt; E24 &gt; E96）的阻值<br />
+              ↑ 增加：结果优先选用更易获取的阻值<br />
+              ↓ 减少：忽略系列偏好，只看其他因素
+            </div>
             <input
               type="range"
               min="0"
@@ -249,8 +254,13 @@ export default function DividerCalculator() {
             />
             <span className="w-10 text-right font-mono">{seriesWeight.toFixed(2)}</span>
           </label>
-          <label className="flex items-center gap-3">
-            <span className="w-24 shrink-0">结构权重</span>
+          <label className="flex items-center gap-3 group relative">
+            <span className="w-24 shrink-0 cursor-help border-b border-dotted border-gray-400">结构权重</span>
+            <div className="absolute left-0 top-full mt-1 z-10 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-3 py-2 w-72 shadow-lg pointer-events-none">
+              偏好简单结构（单电阻 &gt; 串联 &gt; 并联）<br />
+              ↑ 增加：结果优先使用更简洁的电路<br />
+              ↓ 减少：允许复杂结构，增加组合可能性
+            </div>
             <input
               type="range"
               min="0"
@@ -266,8 +276,13 @@ export default function DividerCalculator() {
             />
             <span className="w-10 text-right font-mono">{configWeight.toFixed(1)}</span>
           </label>
-          <label className="flex items-center gap-3">
-            <span className="w-24 shrink-0">误差权重</span>
+          <label className="flex items-center gap-3 group relative">
+            <span className="w-24 shrink-0 cursor-help border-b border-dotted border-gray-400">误差权重</span>
+            <div className="absolute left-0 top-full mt-1 z-10 hidden group-hover:block bg-gray-800 text-white text-xs rounded px-3 py-2 w-72 shadow-lg pointer-events-none">
+              偏好误差小的阻值组合<br />
+              ↑ 增加：结果优先选择更准确的比值<br />
+              ↓ 减少：允许较大误差，扩大可选范围
+            </div>
             <input
               type="range"
               min="0"
