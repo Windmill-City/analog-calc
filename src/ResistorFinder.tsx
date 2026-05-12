@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core"
 import { useEffect, useRef, useState } from "react"
 import { formatResistance, parseWithUnit } from "./units"
+import { useStore } from "./store"
 
 interface ResistorFinderSolution {
   value: number
@@ -64,14 +65,9 @@ function ResistorCell({ info }: { info: ResistorFinderSolution }) {
 }
 
 export default function ResistorFinder() {
-  const [target, setTarget] = useState("10k")
-  const [series, setSeries] = useState("E12")
-  const [useSeries, setUseSeries] = useState(true)
-  const [useParallel, setUseParallel] = useState(true)
-  const [maxError, setMaxError] = useState(5.0)
-  const [seriesWeight, setSeriesWeight] = useState(0.1)
-  const [configWeight, setConfigWeight] = useState(1.0)
-  const [errorWeight, setErrorWeight] = useState(5.0)
+  const resistor = useStore((s) => s.resistor)
+  const setResistor = useStore((s) => s.setResistor)
+  const { target, series, useSeries, useParallel, maxError, seriesWeight, configWeight, errorWeight } = resistor
   const [solutions, setSolutions] = useState<ResistorFinderSolution[]>([])
   const [pending, setPending] = useState(false)
   const calcId = useRef(0)
@@ -128,7 +124,7 @@ export default function ResistorFinder() {
           type="text"
           className="mt-1 w-full border rounded px-2 py-1"
           value={target}
-          onChange={(e) => setTarget(e.target.value)}
+          onChange={(e) => setResistor({ target: e.target.value })}
           onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
           onBlur={() => calc(target, series, useSeries, useParallel, maxError, seriesWeight, configWeight, errorWeight)}
           placeholder="e.g. 10k, 4.7k, 1M"
@@ -144,7 +140,7 @@ export default function ResistorFinder() {
                 key={s}
                 className={`px-3 py-1 rounded text-sm ${series === s ? "bg-blue-600 text-white" : "bg-gray-200"}`}
                 onClick={() => {
-                  setSeries(s)
+                  setResistor({ series: s })
                   calc(target, s, useSeries, useParallel, maxError, seriesWeight, configWeight, errorWeight)
                 }}
               >
@@ -159,7 +155,7 @@ export default function ResistorFinder() {
             className={`px-3 py-1 rounded text-sm ${useSeries ? "bg-green-700 text-white" : "bg-gray-200 text-gray-700"}`}
             onClick={() => {
               const v = !useSeries
-              setUseSeries(v)
+              setResistor({ useSeries: v })
               calc(target, series, v, useParallel, maxError, seriesWeight, configWeight, errorWeight)
             }}
           >
@@ -170,7 +166,7 @@ export default function ResistorFinder() {
             className={`px-3 py-1 rounded text-sm ${useParallel ? "bg-green-700 text-white" : "bg-gray-200 text-gray-700"}`}
             onClick={() => {
               const v = !useParallel
-              setUseParallel(v)
+              setResistor({ useParallel: v })
               calc(target, series, useSeries, v, maxError, seriesWeight, configWeight, errorWeight)
             }}
           >
@@ -180,9 +176,20 @@ export default function ResistorFinder() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
-          最大误差: {maxError.toFixed(1)}%
-        </label>
+        <div className="flex items-center gap-2 mb-1">
+          <label className="block text-sm font-medium">
+            最大误差: {maxError.toFixed(1)}%
+          </label>
+          <button
+            className="text-xs text-gray-400 hover:text-blue-600"
+            onClick={() => {
+              setResistor({ maxError: 5.0 })
+              calc(target, series, useSeries, useParallel, 5.0, seriesWeight, configWeight, errorWeight)
+            }}
+          >
+            复位
+          </button>
+        </div>
         <input
           type="range"
           min="0.1"
@@ -191,7 +198,7 @@ export default function ResistorFinder() {
           value={maxError}
           onChange={(e) => {
             const v = +e.target.value
-            setMaxError(v)
+            setResistor({ maxError: v })
             calc(target, series, useSeries, useParallel, v, seriesWeight, configWeight, errorWeight)
           }}
           className="w-full"
@@ -216,7 +223,7 @@ export default function ResistorFinder() {
               value={seriesWeight}
               onChange={(e) => {
                 const v = +e.target.value
-                setSeriesWeight(v)
+                setResistor({ seriesWeight: v })
                 calc(target, series, useSeries, useParallel, maxError, v, configWeight, errorWeight)
               }}
               className="flex-1"
@@ -238,7 +245,7 @@ export default function ResistorFinder() {
               value={configWeight}
               onChange={(e) => {
                 const v = +e.target.value
-                setConfigWeight(v)
+                setResistor({ configWeight: v })
                 calc(target, series, useSeries, useParallel, maxError, seriesWeight, v, errorWeight)
               }}
               className="flex-1"
@@ -260,7 +267,7 @@ export default function ResistorFinder() {
               value={errorWeight}
               onChange={(e) => {
                 const v = +e.target.value
-                setErrorWeight(v)
+                setResistor({ errorWeight: v })
                 calc(target, series, useSeries, useParallel, maxError, seriesWeight, configWeight, v)
               }}
               className="flex-1"
@@ -268,6 +275,15 @@ export default function ResistorFinder() {
             <span className="w-10 text-right font-mono">{errorWeight.toFixed(1)}</span>
           </label>
         </div>
+        <button
+          className="text-xs text-gray-400 hover:text-blue-600"
+          onClick={() => {
+            setResistor({ seriesWeight: 0.1, configWeight: 1.0, errorWeight: 5.0 })
+            calc(target, series, useSeries, useParallel, maxError, 0.1, 1.0, 5.0)
+          }}
+        >
+          排序权重复位
+        </button>
       </details>
 
       {pending && (

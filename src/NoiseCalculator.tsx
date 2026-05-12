@@ -1,13 +1,12 @@
 import { invoke } from "@tauri-apps/api/core"
 import { useEffect, useState } from "react"
 import { formatSi, parseWithUnit } from "./units"
+import { useStore } from "./store"
 
 export default function NoiseCalculator() {
-  const [gbw, setGbw] = useState("1M")
-  const [gain, setGain] = useState("2")
-  const [vnDensity, setVnDensity] = useState("10n")
-  const [filterOrder, setFilterOrder] = useState(1)
-  const [rcBandwidth, setRcBandwidth] = useState("1k")
+  const noise = useStore((s) => s.noise)
+  const setNoise = useStore((s) => s.setNoise)
+  const { gbw, gain, vnDensity, filterOrder, rcBandwidth } = noise
   const enbFactorStr = filterOrder === 0 ? "" : filterOrder === 1 ? "π/2" : filterOrder === 2 ? "π/4" : "π/8"
   const [result, setResult] = useState<number | null>(null)
 
@@ -58,7 +57,7 @@ export default function NoiseCalculator() {
             type="text"
             className="mt-1 w-full border rounded px-2 py-1"
             value={gbw}
-            onChange={(e) => setGbw(e.target.value)}
+            onChange={(e) => setNoise({ gbw: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             onBlur={() => calc(gbw, gain, vnDensity, filterOrder, rcBandwidth)}
             placeholder="e.g. 1M, 10M, 100k"
@@ -70,7 +69,7 @@ export default function NoiseCalculator() {
             type="text"
             className="mt-1 w-full border rounded px-2 py-1"
             value={gain}
-            onChange={(e) => setGain(e.target.value)}
+            onChange={(e) => setNoise({ gain: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             onBlur={() => calc(gbw, gain, vnDensity, filterOrder, rcBandwidth)}
             placeholder="e.g. 10, 100"
@@ -84,7 +83,7 @@ export default function NoiseCalculator() {
             type="text"
             className="mt-1 w-full border rounded px-2 py-1"
             value={vnDensity}
-            onChange={(e) => setVnDensity(e.target.value)}
+            onChange={(e) => setNoise({ vnDensity: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             onBlur={() => calc(gbw, gain, vnDensity, filterOrder, rcBandwidth)}
             placeholder="e.g. 10n, 0.1u, 1e-8"
@@ -98,7 +97,7 @@ export default function NoiseCalculator() {
             type="text"
             className={`mt-1 w-full border rounded px-2 py-1 ${filterOrder === 0 ? "opacity-40" : ""}`}
             value={rcBandwidth}
-            onChange={(e) => setRcBandwidth(e.target.value)}
+            onChange={(e) => setNoise({ rcBandwidth: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             onBlur={() => calc(gbw, gain, vnDensity, filterOrder, rcBandwidth)}
             placeholder="e.g. 100k, 1M, 10k"
@@ -113,7 +112,7 @@ export default function NoiseCalculator() {
           <button
             className={`px-3 py-1 rounded ${filterOrder === 0 ? "bg-blue-600 text-white" : "bg-gray-200"}`}
             onClick={() => {
-              setFilterOrder(0)
+              setNoise({ filterOrder: 0 })
               calc(gbw, gain, vnDensity, 0, rcBandwidth)
             }}
           >
@@ -124,7 +123,7 @@ export default function NoiseCalculator() {
               key={order}
               className={`px-3 py-1 rounded ${filterOrder === order ? "bg-blue-600 text-white" : "bg-gray-200"}`}
               onClick={() => {
-                setFilterOrder(order)
+                setNoise({ filterOrder: order })
                 calc(gbw, gain, vnDensity, order, rcBandwidth)
               }}
             >

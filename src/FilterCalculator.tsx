@@ -1,13 +1,5 @@
-import { useState } from "react"
 import { formatSi, parseWithUnit } from "./units"
-
-interface Row {
-  id: number
-  r: string
-  c: string
-}
-
-let nextId = 1
+import { useStore } from "./store"
 
 function fc(r: number, c: number): number {
   return 1 / (2 * Math.PI * r * c)
@@ -54,25 +46,25 @@ function computeEnbw(fcList: number[]): number {
 }
 
 export default function FilterCalculator() {
-  const [rows, setRows] = useState<Row[]>([{ id: 0, r: "1k", c: "1u" }])
+  const rows = useStore((s) => s.filter.rows)
+  const setFilter = useStore((s) => s.setFilter)
 
   function updateRow(id: number, field: "r" | "c", value: string) {
-    setRows((prev) =>
-      prev.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
-    )
-  }
-
-  function addRow() {
-    setRows((prev) => {
-      const last = prev[prev.length - 1]
-      const r = last ? last.r : ""
-      const c = last ? last.c : ""
-      return [...prev, { id: nextId++, r, c }]
+    setFilter({
+      rows: rows.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
     })
   }
 
+  function addRow() {
+    const last = rows[rows.length - 1]
+    const maxId = rows.reduce((m, r) => Math.max(m, r.id), 0)
+    const r = last ? last.r : ""
+    const c = last ? last.c : ""
+    setFilter({ rows: [...rows, { id: maxId + 1, r, c }] })
+  }
+
   function removeRow(id: number) {
-    setRows((prev) => prev.filter((row) => row.id !== id))
+    setFilter({ rows: rows.filter((row) => row.id !== id) })
   }
 
   const fcList = rows

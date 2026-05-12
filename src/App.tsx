@@ -1,10 +1,8 @@
-import { useState } from "react"
 import DividerCalculator from "./DividerCalculator"
 import FilterCalculator from "./FilterCalculator"
 import NoiseCalculator from "./NoiseCalculator"
 import ResistorFinder from "./ResistorFinder"
-
-type Tab = "filter" | "noise" | "divider" | "resistor"
+import { useStore, type Tab } from "./store"
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "filter", label: "RC滤波器" },
@@ -14,7 +12,8 @@ const TABS: { key: Tab; label: string }[] = [
 ]
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>("filter")
+  const activeTab = useStore((s) => s.activeTab)
+  const setActiveTab = useStore((s) => s.setActiveTab)
 
   return (
     <div className="min-h-screen bg-gray-50">

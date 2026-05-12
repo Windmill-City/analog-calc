@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core"
 import { useEffect, useRef, useState } from "react"
 import { formatResistance, formatSi, parseWithUnit } from "./units"
+import { useStore } from "./store"
 
 interface ResistorInfo {
   value: number
@@ -71,18 +72,11 @@ function ResistorCell({ info }: { info: ResistorInfo }) {
 }
 
 export default function DividerCalculator() {
-  const [vi, setVi] = useState("5")
-  const [targetVo, setTargetVo] = useState("0.8")
-  const [series, setSeries] = useState("E12")
-  const [useSeries, setUseSeries] = useState(true)
-  const [useParallel, setUseParallel] = useState(true)
+  const divider = useStore((s) => s.divider)
+  const setDivider = useStore((s) => s.setDivider)
+  const { vi, targetVo, series, useSeries, useParallel, seriesWeight, configWeight, errorWeight, minTotal, maxError } = divider
   const [solutions, setSolutions] = useState<Solution[]>([])
   const [pending, setPending] = useState(false)
-  const [seriesWeight, setSeriesWeight] = useState(0.1)
-  const [configWeight, setConfigWeight] = useState(1.0)
-  const [errorWeight, setErrorWeight] = useState(5.0)
-  const [minTotal, setMinTotal] = useState("100k")
-  const [maxError, setMaxError] = useState(5.0)
   const calcId = useRef(0)
 
   async function calc(
@@ -151,7 +145,7 @@ export default function DividerCalculator() {
             type="text"
             className="mt-1 w-full border rounded px-2 py-1"
             value={vi}
-            onChange={(e) => setVi(e.target.value)}
+            onChange={(e) => setDivider({ vi: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             onBlur={() => calc(vi, targetVo, series, useSeries, useParallel, seriesWeight, configWeight, errorWeight, minTotal, maxError)}
             placeholder="e.g. 5, 3.3, 100m"
@@ -165,7 +159,7 @@ export default function DividerCalculator() {
             type="text"
             className="mt-1 w-full border rounded px-2 py-1"
             value={targetVo}
-            onChange={(e) => setTargetVo(e.target.value)}
+            onChange={(e) => setDivider({ targetVo: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             onBlur={() => calc(vi, targetVo, series, useSeries, useParallel, seriesWeight, configWeight, errorWeight, minTotal, maxError)}
             placeholder="e.g. 2.5, 1.8, 500m"
@@ -182,7 +176,7 @@ export default function DividerCalculator() {
                 key={s}
                 className={`px-3 py-1 rounded text-sm ${series === s ? "bg-blue-600 text-white" : "bg-gray-200"}`}
                 onClick={() => {
-                  setSeries(s)
+                  setDivider({ series: s })
                   calc(vi, targetVo, s, useSeries, useParallel, seriesWeight, configWeight, errorWeight, minTotal, maxError)
                 }}
               >
@@ -197,7 +191,7 @@ export default function DividerCalculator() {
             className={`px-3 py-1 rounded text-sm ${useSeries ? "bg-green-700 text-white" : "bg-gray-200 text-gray-700"}`}
             onClick={() => {
               const v = !useSeries
-              setUseSeries(v)
+              setDivider({ useSeries: v })
               calc(vi, targetVo, series, v, useParallel, seriesWeight, configWeight, errorWeight, minTotal, maxError)
             }}
           >
@@ -208,7 +202,7 @@ export default function DividerCalculator() {
             className={`px-3 py-1 rounded text-sm ${useParallel ? "bg-green-700 text-white" : "bg-gray-200 text-gray-700"}`}
             onClick={() => {
               const v = !useParallel
-              setUseParallel(v)
+              setDivider({ useParallel: v })
               calc(vi, targetVo, series, useSeries, v, seriesWeight, configWeight, errorWeight, minTotal, maxError)
             }}
           >
@@ -225,7 +219,7 @@ export default function DividerCalculator() {
           type="text"
           className="mt-1 w-full border rounded px-2 py-1"
           value={minTotal}
-          onChange={(e) => setMinTotal(e.target.value)}
+          onChange={(e) => setDivider({ minTotal: e.target.value })}
           onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
           onBlur={() => calc(vi, targetVo, series, useSeries, useParallel, seriesWeight, configWeight, errorWeight, minTotal, maxError)}
           placeholder="e.g. 1k, 10k, 100k (留空不限)"
@@ -233,9 +227,20 @@ export default function DividerCalculator() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
-          最大误差: {maxError.toFixed(1)}%
-        </label>
+        <div className="flex items-center gap-2 mb-1">
+          <label className="block text-sm font-medium">
+            最大误差: {maxError.toFixed(1)}%
+          </label>
+          <button
+            className="text-xs text-gray-400 hover:text-blue-600"
+            onClick={() => {
+              setDivider({ maxError: 5.0 })
+              calc(vi, targetVo, series, useSeries, useParallel, seriesWeight, configWeight, errorWeight, minTotal, 5.0)
+            }}
+          >
+            复位
+          </button>
+        </div>
         <input
           type="range"
           min="0.1"
@@ -244,7 +249,7 @@ export default function DividerCalculator() {
           value={maxError}
           onChange={(e) => {
             const v = +e.target.value
-            setMaxError(v)
+            setDivider({ maxError: v })
             calc(vi, targetVo, series, useSeries, useParallel, seriesWeight, configWeight, errorWeight, minTotal, v)
           }}
           className="w-full"
@@ -269,7 +274,7 @@ export default function DividerCalculator() {
               value={seriesWeight}
               onChange={(e) => {
                 const v = +e.target.value
-                setSeriesWeight(v)
+                setDivider({ seriesWeight: v })
                 calc(vi, targetVo, series, useSeries, useParallel, v, configWeight, errorWeight, minTotal, maxError)
               }}
               className="flex-1"
@@ -291,7 +296,7 @@ export default function DividerCalculator() {
               value={configWeight}
               onChange={(e) => {
                 const v = +e.target.value
-                setConfigWeight(v)
+                setDivider({ configWeight: v })
                 calc(vi, targetVo, series, useSeries, useParallel, seriesWeight, v, errorWeight, minTotal, maxError)
               }}
               className="flex-1"
@@ -313,7 +318,7 @@ export default function DividerCalculator() {
               value={errorWeight}
               onChange={(e) => {
                 const v = +e.target.value
-                setErrorWeight(v)
+                setDivider({ errorWeight: v })
                 calc(vi, targetVo, series, useSeries, useParallel, seriesWeight, configWeight, v, minTotal, maxError)
               }}
               className="flex-1"
@@ -321,6 +326,15 @@ export default function DividerCalculator() {
             <span className="w-10 text-right font-mono">{errorWeight.toFixed(1)}</span>
           </label>
         </div>
+        <button
+          className="text-xs text-gray-400 hover:text-blue-600"
+          onClick={() => {
+            setDivider({ seriesWeight: 0.1, configWeight: 1.0, errorWeight: 5.0 })
+            calc(vi, targetVo, series, useSeries, useParallel, 0.1, 1.0, 5.0, minTotal, maxError)
+          }}
+        >
+          排序权重复位
+        </button>
       </details>
 
       {pending && (
