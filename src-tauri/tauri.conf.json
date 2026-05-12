@@ -13,7 +13,7 @@
     "windows": [
       {
         "title": "模拟计算器",
-        "width": 900,
+        "width": 1000,
         "height": 1000,
         "center": true
       }
@@ -24,11 +24,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": {
-      "linux": ["appimage"],
-      "macOS": ["app"],
-      "windows": []
-    },
+    "targets": ["app", "appimage", "deb", "dmg", "rpm"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
