@@ -20,6 +20,38 @@ function computeRow(r: string, c: string): number | null {
   return fc(rv, cv);
 }
 
+function hSquared(f: number, fcList: number[]): number {
+  let result = 1;
+  for (const fci of fcList) {
+    result /= 1 + (f / fci) ** 2;
+  }
+  return result;
+}
+
+function totalCutoffFreq(fcList: number[]): number {
+  const minFc = Math.min(...fcList);
+  let lo = 0, hi = minFc;
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2;
+    if (hSquared(mid, fcList) > 0.5) lo = mid;
+    else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+function computeEnbw(fcList: number[]): number {
+  const maxFc = Math.max(...fcList);
+  const fMax = maxFc * 1000;
+  const n = 10000;
+  const h = fMax / n;
+  let sum = hSquared(0, fcList) + hSquared(fMax, fcList);
+  for (let i = 1; i < n; i++) {
+    const f = i * h;
+    sum += hSquared(f, fcList) * (i % 2 === 0 ? 2 : 4);
+  }
+  return sum * h / 3;
+}
+
 export default function FilterCalculator() {
   const [rows, setRows] = useState<Row[]>([{ id: 0, r: "1k", c: "1u" }]);
 
@@ -34,6 +66,10 @@ export default function FilterCalculator() {
   function removeRow(id: number) {
     setRows((prev) => prev.filter((row) => row.id !== id));
   }
+
+  const fcList = rows.map((row) => computeRow(row.r, row.c)).filter((v): v is number => v !== null);
+  const totalFc = fcList.length > 0 ? (fcList.length === 1 ? fcList[0] : totalCutoffFreq(fcList)) : null;
+  const enbwVal = fcList.length > 0 ? (fcList.length === 1 ? fcList[0] * Math.PI / 2 : computeEnbw(fcList)) : null;
 
   return (
     <div className="space-y-4">
@@ -85,6 +121,19 @@ export default function FilterCalculator() {
       >
         + 增加阶数
       </button>
+
+      {totalFc !== null && enbwVal !== null && (
+        <div className="p-3 bg-gray-50 rounded border space-y-2">
+          <div>
+            <p className="text-sm text-gray-500">总截止频率</p>
+            <p className="text-xl font-mono">{formatSi(totalFc, "Hz", 3)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">等效噪声带宽 (ENBW)</p>
+            <p className="text-xl font-mono">{formatSi(enbwVal, "Hz", 3)}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
