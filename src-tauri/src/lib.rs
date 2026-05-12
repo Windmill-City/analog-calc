@@ -247,6 +247,9 @@ async fn calculate_divider(
     use_series: bool,
     use_parallel: bool,
     count: u32,
+    series_weight: f64,
+    config_weight: f64,
+    error_weight: f64,
 ) -> Vec<DividerSolution> {
     tokio::task::spawn_blocking(move || {
         let (use_series, use_parallel) = if series == "E6" || series == "E12" {
@@ -288,8 +291,8 @@ async fn calculate_divider(
                 + best_series_rank(&b.r2.component_series)) as f64;
             let a_config = (config_rank(&a.r1.config) + config_rank(&a.r2.config)) as f64;
             let b_config = (config_rank(&b.r1.config) + config_rank(&b.r2.config)) as f64;
-            let sa = a_series * 0.1 + a_config + a.error_percent;
-            let sb = b_series * 0.1 + b_config + b.error_percent;
+            let sa = a_series * series_weight + a_config * config_weight + a.error_percent * error_weight;
+            let sb = b_series * series_weight + b_config * config_weight + b.error_percent * error_weight;
             sa.partial_cmp(&sb).unwrap()
         });
         solutions.truncate(count as usize);

@@ -78,6 +78,9 @@ export default function DividerCalculator() {
   const [useParallel, setUseParallel] = useState(false)
   const [solutions, setSolutions] = useState<Solution[]>([])
   const [pending, setPending] = useState(false)
+  const [seriesWeight, setSeriesWeight] = useState(0.1)
+  const [configWeight, setConfigWeight] = useState(1.0)
+  const [errorWeight, setErrorWeight] = useState(5.0)
   const calcId = useRef(0)
 
   async function calc(
@@ -86,6 +89,9 @@ export default function DividerCalculator() {
     s: string,
     us: boolean,
     up: boolean,
+    sw: number,
+    cw: number,
+    ew: number,
   ) {
     const vv = parseWithUnit(v)
     const tvv = parseWithUnit(tv)
@@ -107,6 +113,9 @@ export default function DividerCalculator() {
         useSeries: us,
         useParallel: up,
         count: 10,
+        seriesWeight: sw,
+        configWeight: cw,
+        errorWeight: ew,
       })
       if (id === calcId.current) {
         setSolutions(result)
@@ -118,7 +127,7 @@ export default function DividerCalculator() {
   }
 
   useEffect(() => {
-    calc(vi, targetVo, series, useSeries, useParallel)
+    calc(vi, targetVo, series, useSeries, useParallel, seriesWeight, configWeight, errorWeight)
   }, [])
 
   return (
@@ -136,7 +145,7 @@ export default function DividerCalculator() {
             value={vi}
             onChange={(e) => setVi(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-            onBlur={() => calc(vi, targetVo, series, useSeries, useParallel)}
+            onBlur={() => calc(vi, targetVo, series, useSeries, useParallel, seriesWeight, configWeight, errorWeight)}
             placeholder="e.g. 5, 3.3, 100m"
           />
         </div>
@@ -150,7 +159,7 @@ export default function DividerCalculator() {
             value={targetVo}
             onChange={(e) => setTargetVo(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-            onBlur={() => calc(vi, targetVo, series, useSeries, useParallel)}
+            onBlur={() => calc(vi, targetVo, series, useSeries, useParallel, seriesWeight, configWeight, errorWeight)}
             placeholder="e.g. 2.5, 1.8, 500m"
           />
         </div>
@@ -166,7 +175,7 @@ export default function DividerCalculator() {
                 className={`px-3 py-1 rounded text-sm ${series === s ? "bg-blue-600 text-white" : "bg-gray-200"}`}
                 onClick={() => {
                   setSeries(s)
-                  calc(vi, targetVo, s, useSeries, useParallel)
+                  calc(vi, targetVo, s, useSeries, useParallel, seriesWeight, configWeight, errorWeight)
                 }}
               >
                 {s}
@@ -182,7 +191,7 @@ export default function DividerCalculator() {
             onClick={() => {
               const v = !useSeries
               setUseSeries(v)
-              calc(vi, targetVo, series, v, useParallel)
+              calc(vi, targetVo, series, v, useParallel, seriesWeight, configWeight, errorWeight)
             }}
           >
             串联
@@ -194,13 +203,70 @@ export default function DividerCalculator() {
             onClick={() => {
               const v = !useParallel
               setUseParallel(v)
-              calc(vi, targetVo, series, useSeries, v)
+              calc(vi, targetVo, series, useSeries, v, seriesWeight, configWeight, errorWeight)
             }}
           >
             并联
           </button>
         </div>
       </div>
+
+      <details className="text-sm text-gray-600">
+        <summary className="cursor-pointer select-none">排序权重</summary>
+        <div className="mt-2 space-y-2">
+          <label className="flex items-center gap-3">
+            <span className="w-24 shrink-0">系列权重</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={seriesWeight}
+              onChange={(e) => {
+                const v = +e.target.value
+                setSeriesWeight(v)
+                calc(vi, targetVo, series, useSeries, useParallel, v, configWeight, errorWeight)
+              }}
+              className="flex-1"
+            />
+            <span className="w-10 text-right font-mono">{seriesWeight.toFixed(2)}</span>
+          </label>
+          <label className="flex items-center gap-3">
+            <span className="w-24 shrink-0">结构权重</span>
+            <input
+              type="range"
+              min="0"
+              max="10"
+              step="0.1"
+              value={configWeight}
+              onChange={(e) => {
+                const v = +e.target.value
+                setConfigWeight(v)
+                calc(vi, targetVo, series, useSeries, useParallel, seriesWeight, v, errorWeight)
+              }}
+              className="flex-1"
+            />
+            <span className="w-10 text-right font-mono">{configWeight.toFixed(1)}</span>
+          </label>
+          <label className="flex items-center gap-3">
+            <span className="w-24 shrink-0">误差权重</span>
+            <input
+              type="range"
+              min="0"
+              max="20"
+              step="0.5"
+              value={errorWeight}
+              onChange={(e) => {
+                const v = +e.target.value
+                setErrorWeight(v)
+                calc(vi, targetVo, series, useSeries, useParallel, seriesWeight, configWeight, v)
+              }}
+              className="flex-1"
+            />
+            <span className="w-10 text-right font-mono">{errorWeight.toFixed(1)}</span>
+          </label>
+        </div>
+      </details>
 
       {pending && (
         <div className="flex items-center justify-center py-8 text-gray-400">
