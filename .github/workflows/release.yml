@@ -2,7 +2,7 @@ name: Release
 on:
   push:
     tags:
-      - '[0-9]*'
+      - "[0-9]*"
 
 jobs:
   release:
@@ -26,6 +26,11 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
+      - name: cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
       - name: install dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
@@ -43,33 +48,36 @@ jobs:
         with:
           version: 11
 
+      - name: cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/pnpm/store
+            ~\AppData\Local\pnpm\store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
       - name: install frontend dependencies
         run: pnpm install
 
-      - name: generate changelog
-        id: changelog
-        uses: orhun/git-cliff-action@v4
-        with:
-          args: --current --strip header
+      - name: build app
+        run: pnpm tauri build
 
-      - name: build and release
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: '__VERSION__'
-          releaseBody: |
-            See the assets to download the executable.
-
-            ${{ steps.changelog.outputs.content }}
-          releaseDraft: false
-          prerelease: false
-
-      - name: upload windows exe
-        if: matrix.platform == 'windows-latest'
+      - name: package (macOS)
+        if: matrix.platform == 'macos-latest'
         shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ github.ref_name }}" "src-tauri/target/release/analog-calc.exe" --clobber
+          ditto -c -k --keepParent \
+            src-tauri/target/release/bundle/macos/analog-calc.app \
+            analog-calc_${{ github.ref_name }}_${{ matrix.target }}.zip
+
+      - name: upload release artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            analog-calc_*.zip
+            src-tauri/target/release/analog-calc.exe
+          generate_release_notes: true
+          fail_on_unmatched_files: false
