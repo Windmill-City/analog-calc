@@ -87,7 +87,7 @@ export default function DividerCalculator() {
     try {
       const result = await invoke<Solution[]>("calculate_divider", {
         vi: vv,
-        targetVo: tvv,
+        vo: tvv,
         series: s,
         useSeries: us,
         useParallel: up,
