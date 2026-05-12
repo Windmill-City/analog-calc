@@ -5,6 +5,7 @@ import { parseWithUnit, formatResistance, formatSi } from "./units";
 interface ResistorInfo {
   value: number;
   components: number[];
+  component_series: string[];
   config: string;
 }
 
@@ -24,12 +25,40 @@ const CONFIG_LABEL: Record<string, string> = {
   parallel: "并联",
 };
 
-function formatResistorComposition(info: ResistorInfo): string {
+const SERIES_COLOR: Record<string, string> = {
+  E6: "bg-red-100 text-red-700",
+  E12: "bg-orange-100 text-orange-700",
+  E24: "bg-blue-100 text-blue-700",
+  E96: "bg-green-100 text-green-700",
+};
+
+function Badge({ series }: { series: string }) {
+  return (
+    <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${SERIES_COLOR[series] ?? "bg-gray-100 text-gray-700"}`}>
+      {series}
+    </span>
+  );
+}
+
+function ResistorCell({ info }: { info: ResistorInfo }) {
   const val = formatResistance(info.value);
-  if (info.config === "single") return val;
-  const op = info.config === "series" ? " + " : " // ";
-  const components = info.components.map(formatResistance).join(op);
-  return `${components} (${CONFIG_LABEL[info.config]}, ${val})`;
+  if (info.config === "single") {
+    return (
+      <>
+        <span className="mr-1">{val}</span>
+        <Badge series={info.component_series[0]} />
+      </>
+    );
+  }
+  const op = info.config === "series" ? " + " : " | ";
+  const parts = info.components.map((c, i) => (
+    <span key={i}>
+      {i > 0 && <span className="mx-0.5">{op.trim()}</span>}
+      <span className="mr-0.5">{formatResistance(c)}</span>
+      <Badge series={info.component_series[i]} />
+    </span>
+  ));
+  return <>{parts} <span className="text-gray-500">({CONFIG_LABEL[info.config]}, {val})</span></>;
 }
 
 export default function DividerCalculator() {
@@ -181,8 +210,8 @@ export default function DividerCalculator() {
               {solutions.map((sol, i) => (
                 <tr key={i} className="hover:bg-gray-50">
                   <td className="border px-2 py-1">{i + 1}</td>
-                  <td className="border px-2 py-1 text-xs">{formatResistorComposition(sol.r1)}</td>
-                  <td className="border px-2 py-1 text-xs">{formatResistorComposition(sol.r2)}</td>
+                  <td className="border px-2 py-1 text-xs"><ResistorCell info={sol.r1} /></td>
+                  <td className="border px-2 py-1 text-xs"><ResistorCell info={sol.r2} /></td>
                   <td className="border px-2 py-1 font-mono">{formatSi(sol.vo, "V", 4)}</td>
                   <td className="border px-2 py-1 font-mono">{formatSi(sol.vi, "V", 4)}</td>
                   <td className="border px-2 py-1 font-mono">{sol.error_percent.toFixed(2)}%</td>

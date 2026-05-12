@@ -44,10 +44,36 @@ fn calculate_noise(
     vn_density * 1e-9 * effective_bw.sqrt()
 }
 
+fn normalize_mantissa(v: f64) -> f64 {
+    let mut m = v;
+    while m >= 10.0 {
+        m /= 10.0;
+    }
+    while m < 1.0 {
+        m *= 10.0;
+    }
+    (m * 100.0).round() / 100.0
+}
+
+fn determine_series(value: f64) -> &'static str {
+    let m = normalize_mantissa(value);
+    if E6.iter().any(|&e| (normalize_mantissa(e) - m).abs() < 0.005) {
+        return "E6";
+    }
+    if E12.iter().any(|&e| (normalize_mantissa(e) - m).abs() < 0.005) {
+        return "E12";
+    }
+    if E24.iter().any(|&e| (normalize_mantissa(e) - m).abs() < 0.005) {
+        return "E24";
+    }
+    "E96"
+}
+
 #[derive(Debug, Clone, Serialize)]
 struct ResistorInfo {
     value: f64,
     components: Vec<f64>,
+    component_series: Vec<String>,
     config: String,
 }
 
@@ -93,6 +119,7 @@ fn build_search_set(
         entries.push((key, ResistorInfo {
             value: v,
             components: vec![v],
+            component_series: vec![determine_series(v).to_string()],
             config: "single".into(),
         }));
     }
@@ -105,6 +132,7 @@ fn build_search_set(
                 entries.push((key, ResistorInfo {
                     value: v,
                     components: vec![a, b],
+                    component_series: vec![determine_series(a).to_string(), determine_series(b).to_string()],
                     config: "series".into(),
                 }));
             }
@@ -119,6 +147,7 @@ fn build_search_set(
                 entries.push((key, ResistorInfo {
                     value: v,
                     components: vec![a, b],
+                    component_series: vec![determine_series(a).to_string(), determine_series(b).to_string()],
                     config: "parallel".into(),
                 }));
             }
@@ -131,19 +160,26 @@ fn build_search_set(
     entries.into_iter().map(|(_, info)| info).collect()
 }
 
-fn solution_score(error: f64, config: &str, series: &str) -> f64 {
-    let cf = match config {
-        "single" => 1.0,
-        "series" => 1.5,
-        _ => 2.0,
-    };
-    let pf = match series {
-        "E6" => 2.0,
-        "E12" => 1.5,
-        "E24" => 1.0,
-        _ => 0.5,
-    };
-    error * cf * pf
+fn series_rank(s: &str) -> u32 {
+    match s {
+        "E6" => 0,
+        "E12" => 1,
+        "E24" => 2,
+        "E96" => 3,
+        _ => 4,
+    }
+}
+
+fn config_rank(config: &str) -> u32 {
+    match config {
+        "single" => 0,
+        "series" => 1,
+        _ => 2,
+    }
+}
+
+fn best_series_rank(component_series: &[String]) -> u32 {
+    component_series.iter().map(|s| series_rank(s)).min().unwrap_or(4)
 }
 
 fn find_best_r1<'a>(
@@ -180,7 +216,7 @@ fn find_best_r1<'a>(
 #[tauri::command]
 async fn calculate_divider(
     vi: f64,
-    target_vo: f64,
+    vo: f64,
     series: String,
     use_series: bool,
     use_parallel: bool,
@@ -196,18 +232,18 @@ async fn calculate_divider(
         let values = expand_values(base, 0, 6);
         let search_set = build_search_set(&values, use_series, use_parallel);
 
-        if !(target_vo > 0.0 && target_vo < vi) {
+        if !(vo > 0.0 && vo < vi) {
             return vec![];
         }
 
-        let target_ratio = target_vo / vi;
+        let target_ratio = vo / vi;
         let mut solutions: Vec<DividerSolution> = Vec::new();
 
         for r2 in &search_set {
             let ideal_r1 = r2.value * (1.0 / target_ratio - 1.0);
 
             if let Some((r1, computed, error)) =
-                find_best_r1(&search_set, ideal_r1, r2.value, vi, target_vo)
+                find_best_r1(&search_set, ideal_r1, r2.value, vi, vo)
             {
                 solutions.push(DividerSolution {
                     r1: r1.clone(),
@@ -220,8 +256,12 @@ async fn calculate_divider(
         }
 
         solutions.sort_by(|a, b| {
-            let sa = solution_score(a.error_percent, &a.r1.config, &series);
-            let sb = solution_score(b.error_percent, &b.r1.config, &series);
+            let a_series = (best_series_rank(&a.r1.component_series) + best_series_rank(&a.r2.component_series)) as f64;
+            let b_series = (best_series_rank(&b.r1.component_series) + best_series_rank(&b.r2.component_series)) as f64;
+            let a_config = (config_rank(&a.r1.config) + config_rank(&a.r2.config)) as f64;
+            let b_config = (config_rank(&b.r1.config) + config_rank(&b.r2.config)) as f64;
+            let sa = a_series * 10000.0 + a_config * 100.0 + a.error_percent;
+            let sb = b_series * 10000.0 + b_config * 100.0 + b.error_percent;
             sa.partial_cmp(&sb).unwrap()
         });
         solutions.truncate(count as usize);
