@@ -1,33 +1,50 @@
-import { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { parseWithUnit, formatSi } from "./units";
+import { invoke } from "@tauri-apps/api/core"
+import { useEffect, useState } from "react"
+import { formatSi, parseWithUnit } from "./units"
 
 export default function NoiseCalculator() {
-  const [gbw, setGbw] = useState("1M");
-  const [gain, setGain] = useState("10");
-  const [vnDensity, setVnDensity] = useState("10n");
-  const [filterOrder, setFilterOrder] = useState(1);
-  const [rcBandwidth, setRcBandwidth] = useState("100k");
-  const [result, setResult] = useState<number | null>(null);
+  const [gbw, setGbw] = useState("1M")
+  const [gain, setGain] = useState("10")
+  const [vnDensity, setVnDensity] = useState("10n")
+  const [filterOrder, setFilterOrder] = useState(1)
+  const [rcBandwidth, setRcBandwidth] = useState("100k")
+  const [result, setResult] = useState<number | null>(null)
 
-  async function calc(g: string, a: string, vn: string, order: number, bw: string) {
-    const gv = parseWithUnit(g);
-    const av = parseWithUnit(a);
-    const vnv = parseWithUnit(vn);
-    const bwv = parseWithUnit(bw);
-    if (isNaN(gv) || isNaN(av) || isNaN(vnv) || isNaN(bwv) || gv <= 0 || av <= 0 || vnv <= 0 || bwv <= 0)
-      return;
+  async function calc(
+    g: string,
+    a: string,
+    vn: string,
+    order: number,
+    bw: string,
+  ) {
+    const gv = parseWithUnit(g)
+    const av = parseWithUnit(a)
+    const vnv = parseWithUnit(vn)
+    const bwv = parseWithUnit(bw)
+    if (
+      isNaN(gv) ||
+      isNaN(av) ||
+      isNaN(vnv) ||
+      isNaN(bwv) ||
+      gv <= 0 ||
+      av <= 0 ||
+      vnv <= 0 ||
+      bwv <= 0
+    )
+      return
     const rms = await invoke<number>("calculate_noise", {
       gbw: gv,
       gain: av,
       vnDensity: vnv,
       filterOrder: order,
       rcBandwidth: bwv,
-    });
-    setResult(rms);
+    })
+    setResult(rms)
   }
 
-  useEffect(() => { calc(gbw, gain, vnDensity, filterOrder, rcBandwidth); }, []);
+  useEffect(() => {
+    calc(gbw, gain, vnDensity, filterOrder, rcBandwidth)
+  }, [])
 
   return (
     <div className="space-y-4">
@@ -59,7 +76,9 @@ export default function NoiseCalculator() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium">V<sub>n</sub> 密度 (V/√Hz)</label>
+          <label className="block text-sm font-medium">
+            V<sub>n</sub> 密度 (V/√Hz)
+          </label>
           <input
             type="text"
             className="mt-1 w-full border rounded px-2 py-1"
@@ -71,7 +90,9 @@ export default function NoiseCalculator() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium">RC 滤波器带宽 (Hz)</label>
+          <label className="block text-sm font-medium">
+            RC 滤波器带宽 (Hz)
+          </label>
           <input
             type="text"
             className="mt-1 w-full border rounded px-2 py-1"
@@ -91,7 +112,10 @@ export default function NoiseCalculator() {
             <button
               key={order}
               className={`px-3 py-1 rounded ${filterOrder === order ? "bg-blue-600 text-white" : "bg-gray-200"}`}
-              onClick={() => { setFilterOrder(order); calc(gbw, gain, vnDensity, order, rcBandwidth); }}
+              onClick={() => {
+                setFilterOrder(order)
+                calc(gbw, gain, vnDensity, order, rcBandwidth)
+              }}
             >
               {order}阶 RC
             </button>
@@ -101,13 +125,13 @@ export default function NoiseCalculator() {
 
       {result !== null && (
         <div className="p-3 bg-gray-50 rounded border">
-          <p className="text-sm text-gray-500">总输出噪声 V<sub>rms</sub></p>
-          <p className="text-xl font-mono">{formatSi(result, "V", 3)}</p>
-          <p className="text-xs text-gray-400">
-            = {formatSi(result, "V", 4)}
+          <p className="text-sm text-gray-500">
+            总输出噪声 V<sub>rms</sub>
           </p>
+          <p className="text-xl font-mono">{formatSi(result, "V", 3)}</p>
+          <p className="text-xs text-gray-400">= {formatSi(result, "V", 4)}</p>
         </div>
       )}
     </div>
-  );
+  )
 }

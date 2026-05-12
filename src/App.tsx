@@ -1,18 +1,18 @@
-import { useState } from "react";
-import FilterCalculator from "./FilterCalculator";
-import NoiseCalculator from "./NoiseCalculator";
-import DividerCalculator from "./DividerCalculator";
+import { useState } from "react"
+import DividerCalculator from "./DividerCalculator"
+import FilterCalculator from "./FilterCalculator"
+import NoiseCalculator from "./NoiseCalculator"
 
-type Tab = "filter" | "noise" | "divider";
+type Tab = "filter" | "noise" | "divider"
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "filter", label: "RC滤波器" },
   { key: "noise", label: "运放噪声" },
   { key: "divider", label: "电阻分压" },
-];
+]
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>("filter");
+  const [activeTab, setActiveTab] = useState<Tab>("filter")
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -46,7 +46,7 @@ function App() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App

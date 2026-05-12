@@ -1,86 +1,103 @@
-import { useState } from "react";
-import { parseWithUnit, formatSi } from "./units";
+import { useState } from "react"
+import { formatSi, parseWithUnit } from "./units"
 
 interface Row {
-  id: number;
-  r: string;
-  c: string;
+  id: number
+  r: string
+  c: string
 }
 
-let nextId = 1;
+let nextId = 1
 
 function fc(r: number, c: number): number {
-  return 1 / (2 * Math.PI * r * c);
+  return 1 / (2 * Math.PI * r * c)
 }
 
 function computeRow(r: string, c: string): number | null {
-  const rv = parseWithUnit(r);
-  const cv = parseWithUnit(c);
-  if (isNaN(rv) || isNaN(cv) || rv <= 0 || cv <= 0) return null;
-  return fc(rv, cv);
+  const rv = parseWithUnit(r)
+  const cv = parseWithUnit(c)
+  if (isNaN(rv) || isNaN(cv) || rv <= 0 || cv <= 0) return null
+  return fc(rv, cv)
 }
 
 function hSquared(f: number, fcList: number[]): number {
-  let result = 1;
+  let result = 1
   for (const fci of fcList) {
-    result /= 1 + (f / fci) ** 2;
+    result /= 1 + (f / fci) ** 2
   }
-  return result;
+  return result
 }
 
 function totalCutoffFreq(fcList: number[]): number {
-  const minFc = Math.min(...fcList);
-  let lo = 0, hi = minFc;
+  const minFc = Math.min(...fcList)
+  let lo = 0,
+    hi = minFc
   for (let i = 0; i < 100; i++) {
-    const mid = (lo + hi) / 2;
-    if (hSquared(mid, fcList) > 0.5) lo = mid;
-    else hi = mid;
+    const mid = (lo + hi) / 2
+    if (hSquared(mid, fcList) > 0.5) lo = mid
+    else hi = mid
   }
-  return (lo + hi) / 2;
+  return (lo + hi) / 2
 }
 
 function computeEnbw(fcList: number[]): number {
-  const maxFc = Math.max(...fcList);
-  const fMax = maxFc * 1000;
-  const n = 10000;
-  const h = fMax / n;
-  let sum = hSquared(0, fcList) + hSquared(fMax, fcList);
+  const maxFc = Math.max(...fcList)
+  const fMax = maxFc * 1000
+  const n = 10000
+  const h = fMax / n
+  let sum = hSquared(0, fcList) + hSquared(fMax, fcList)
   for (let i = 1; i < n; i++) {
-    const f = i * h;
-    sum += hSquared(f, fcList) * (i % 2 === 0 ? 2 : 4);
+    const f = i * h
+    sum += hSquared(f, fcList) * (i % 2 === 0 ? 2 : 4)
   }
-  return sum * h / 3;
+  return (sum * h) / 3
 }
 
 export default function FilterCalculator() {
-  const [rows, setRows] = useState<Row[]>([{ id: 0, r: "1k", c: "1u" }]);
+  const [rows, setRows] = useState<Row[]>([{ id: 0, r: "1k", c: "1u" }])
 
   function updateRow(id: number, field: "r" | "c", value: string) {
-    setRows((prev) => prev.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
+    setRows((prev) =>
+      prev.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
+    )
   }
 
   function addRow() {
-    setRows((prev) => [...prev, { id: nextId++, r: "", c: "" }]);
+    setRows((prev) => [...prev, { id: nextId++, r: "", c: "" }])
   }
 
   function removeRow(id: number) {
-    setRows((prev) => prev.filter((row) => row.id !== id));
+    setRows((prev) => prev.filter((row) => row.id !== id))
   }
 
-  const fcList = rows.map((row) => computeRow(row.r, row.c)).filter((v): v is number => v !== null);
-  const totalFc = fcList.length > 0 ? (fcList.length === 1 ? fcList[0] : totalCutoffFreq(fcList)) : null;
-  const enbwVal = fcList.length > 0 ? (fcList.length === 1 ? fcList[0] * Math.PI / 2 : computeEnbw(fcList)) : null;
+  const fcList = rows
+    .map((row) => computeRow(row.r, row.c))
+    .filter((v): v is number => v !== null)
+  const totalFc =
+    fcList.length > 0
+      ? fcList.length === 1
+        ? fcList[0]
+        : totalCutoffFreq(fcList)
+      : null
+  const enbwVal =
+    fcList.length > 0
+      ? fcList.length === 1
+        ? (fcList[0] * Math.PI) / 2
+        : computeEnbw(fcList)
+      : null
 
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">RC 滤波器截止频率计算</h2>
 
       {rows.map((row, i) => {
-        const result = computeRow(row.r, row.c);
+        const result = computeRow(row.r, row.c)
         return (
           <div key={row.id} className="p-3 border rounded space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 shrink-0">第{i + 1}级</span>
+              <span className="text-sm text-gray-500 shrink-0">
+                第{i + 1}级
+              </span>
               <div className="flex-1 grid grid-cols-2 gap-2">
                 <input
                   type="text"
@@ -114,7 +131,7 @@ export default function FilterCalculator() {
               </p>
             )}
           </div>
-        );
+        )
       })}
 
       <button
@@ -137,5 +154,5 @@ export default function FilterCalculator() {
         </div>
       )}
     </div>
-  );
+  )
 }
