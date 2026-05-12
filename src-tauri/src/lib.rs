@@ -225,6 +225,7 @@ fn find_best_r1<'a>(
     r2_val: f64,
     known: f64,
     target: f64,
+    max_error: f64,
 ) -> Option<(&'a ResistorInfo, f64, f64)> {
     let idx = match search_set.binary_search_by(|probe| {
         probe
@@ -245,7 +246,7 @@ fn find_best_r1<'a>(
         let r1 = &search_set[ci];
         let computed = known * r2_val / (r1.value + r2_val);
         let error = ((computed - target) / target * 100.0).abs();
-        if error < 5.0 && best.as_ref().map_or(true, |b| error < b.2) {
+        if error < max_error && best.as_ref().map_or(true, |b| error < b.2) {
             best = Some((r1, computed, error));
         }
     }
@@ -265,6 +266,7 @@ async fn calculate_divider(
     config_weight: f64,
     error_weight: f64,
     min_total_resistance: f64,
+    max_error: f64,
 ) -> Vec<DividerSolution> {
     tokio::task::spawn_blocking(move || {
         let base = get_series(&series);
@@ -297,7 +299,7 @@ async fn calculate_divider(
             let ideal_r1 = r2.value * (1.0 / target_ratio - 1.0);
 
             if let Some((r1, computed, error)) =
-                find_best_r1(&search_set, ideal_r1, r2.value, vi, vo)
+                find_best_r1(&search_set, ideal_r1, r2.value, vi, vo, max_error)
             {
                 let total = r1.value + r2.value;
                 if total < min_total_resistance {
@@ -312,6 +314,8 @@ async fn calculate_divider(
                 });
             }
         }
+
+        solutions.retain(|s| s.error_percent <= max_error);
 
         solutions.sort_by(|a, b| {
             let a_series = (best_series_rank(&a.r1.component_series)
