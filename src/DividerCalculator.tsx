@@ -404,6 +404,9 @@ export default function DividerCalculator() {
           </p>
         </div>
       )}
+      {!pending && solutions.length === 0 && (
+        <p className="text-sm text-gray-400 text-center py-4">未找到匹配的方案</p>
+      )}
     </div>
   )
 }
