@@ -44,10 +44,17 @@ fn calculate_noise(
     vn_density * 1e-9 * effective_bw.sqrt()
 }
 
+#[derive(Debug, Clone, Serialize)]
+struct ResistorInfo {
+    value: f64,
+    components: Vec<f64>,
+    config: String,
+}
+
 #[derive(Debug, Serialize)]
 struct DividerSolution {
-    r1: f64,
-    r2: f64,
+    r1: ResistorInfo,
+    r2: ResistorInfo,
     vo: f64,
     error_percent: f64,
 }
@@ -73,17 +80,54 @@ fn expand_values(base: &[f64], min_decades: i32, max_decades: i32) -> Vec<f64> {
     values
 }
 
-fn combine_series(values: &[f64]) -> Vec<f64> {
-    let mut combined: Vec<f64> = values.to_vec();
-    for &a in values {
-        for &b in values {
-            combined.push(a + b);
-            combined.push(a * b / (a + b));
+fn build_search_set(
+    values: &[f64],
+    use_series: bool,
+    use_parallel: bool,
+) -> Vec<ResistorInfo> {
+    let mut entries: Vec<(u64, ResistorInfo)> = Vec::new();
+
+    for &v in values {
+        let key = (v * 1e6).round() as u64;
+        entries.push((key, ResistorInfo {
+            value: v,
+            components: vec![v],
+            config: "single".into(),
+        }));
+    }
+
+    if use_series {
+        for &a in values {
+            for &b in values {
+                let v = a + b;
+                let key = (v * 1e6).round() as u64;
+                entries.push((key, ResistorInfo {
+                    value: v,
+                    components: vec![a, b],
+                    config: "series".into(),
+                }));
+            }
         }
     }
-    combined.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    combined.dedup();
-    combined
+
+    if use_parallel {
+        for &a in values {
+            for &b in values {
+                let v = a * b / (a + b);
+                let key = (v * 1e6).round() as u64;
+                entries.push((key, ResistorInfo {
+                    value: v,
+                    components: vec![a, b],
+                    config: "parallel".into(),
+                }));
+            }
+        }
+    }
+
+    entries.sort_by(|a, b| a.0.cmp(&b.0));
+    entries.dedup_by(|a, b| a.0 == b.0);
+
+    entries.into_iter().map(|(_, info)| info).collect()
 }
 
 #[tauri::command]
@@ -91,21 +135,18 @@ fn calculate_divider(
     vi: f64,
     target_vo: f64,
     series: String,
-    use_combinations: bool,
+    use_series: bool,
+    use_parallel: bool,
     count: u32,
 ) -> Vec<DividerSolution> {
     let base = get_series(&series);
     let values = expand_values(base, 0, 6);
-    let search_set = if use_combinations {
-        combine_series(&values)
-    } else {
-        values
-    };
+    let search_set = build_search_set(&values, use_series, use_parallel);
 
     let mut solutions: Vec<DividerSolution> = Vec::new();
-    for &r1 in &search_set {
-        for &r2 in &search_set {
-            let vo = vi * r2 / (r1 + r2);
+    for r1 in &search_set {
+        for r2 in &search_set {
+            let vo = vi * r2.value / (r1.value + r2.value);
             let error_percent = if target_vo != 0.0 {
                 ((vo - target_vo) / target_vo * 100.0).abs()
             } else {
@@ -113,8 +154,8 @@ fn calculate_divider(
             };
             if error_percent < 5.0 {
                 solutions.push(DividerSolution {
-                    r1,
-                    r2,
+                    r1: r1.clone(),
+                    r2: r2.clone(),
                     vo,
                     error_percent,
                 });

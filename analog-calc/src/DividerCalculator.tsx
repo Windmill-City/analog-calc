@@ -2,23 +2,44 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { parseWithUnit, formatResistance, formatSi } from "./units";
 
+interface ResistorInfo {
+  value: number;
+  components: number[];
+  config: string;
+}
+
 interface Solution {
-  r1: number;
-  r2: number;
+  r1: ResistorInfo;
+  r2: ResistorInfo;
   vo: number;
   error_percent: number;
 }
 
 const SERIES = ["E6", "E12", "E24", "E96"];
 
+const CONFIG_LABEL: Record<string, string> = {
+  single: "",
+  series: "串联",
+  parallel: "并联",
+};
+
+function formatResistorComposition(info: ResistorInfo): string {
+  const val = formatResistance(info.value);
+  if (info.config === "single") return val;
+  const op = info.config === "series" ? " + " : " // ";
+  const components = info.components.map(formatResistance).join(op);
+  return `${components} (${CONFIG_LABEL[info.config]}, ${val})`;
+}
+
 export default function DividerCalculator() {
   const [vi, setVi] = useState("5");
   const [targetVo, setTargetVo] = useState("2.5");
   const [series, setSeries] = useState("E24");
-  const [useCombinations, setUseCombinations] = useState(false);
+  const [useSeries, setUseSeries] = useState(false);
+  const [useParallel, setUseParallel] = useState(false);
   const [solutions, setSolutions] = useState<Solution[]>([]);
 
-  async function calc(v: string, tv: string, s: string, comb: boolean) {
+  async function calc(v: string, tv: string, s: string, us: boolean, up: boolean) {
     const vv = parseWithUnit(v);
     const tvv = parseWithUnit(tv);
     if (isNaN(vv) || isNaN(tvv) || vv <= 0 || tvv <= 0 || tvv >= vv) return;
@@ -26,13 +47,14 @@ export default function DividerCalculator() {
       vi: vv,
       targetVo: tvv,
       series: s,
-      useCombinations: comb,
+      useSeries: us,
+      useParallel: up,
       count: 10,
     });
     setSolutions(result);
   }
 
-  useEffect(() => { calc(vi, targetVo, series, useCombinations); }, []);
+  useEffect(() => { calc(vi, targetVo, series, useSeries, useParallel); }, []);
 
   return (
     <div className="space-y-4">
@@ -46,7 +68,7 @@ export default function DividerCalculator() {
             className="mt-1 w-full border rounded px-2 py-1"
             value={vi}
             onChange={(e) => setVi(e.target.value)}
-            onBlur={() => calc(vi, targetVo, series, useCombinations)}
+            onBlur={() => calc(vi, targetVo, series, useSeries, useParallel)}
             placeholder="e.g. 5, 3.3, 100m"
           />
         </div>
@@ -57,7 +79,7 @@ export default function DividerCalculator() {
             className="mt-1 w-full border rounded px-2 py-1"
             value={targetVo}
             onChange={(e) => setTargetVo(e.target.value)}
-            onBlur={() => calc(vi, targetVo, series, useCombinations)}
+            onBlur={() => calc(vi, targetVo, series, useSeries, useParallel)}
             placeholder="e.g. 2.5, 1.8, 500m"
           />
         </div>
@@ -71,21 +93,31 @@ export default function DividerCalculator() {
               <button
                 key={s}
                 className={`px-3 py-1 rounded text-sm ${series === s ? "bg-blue-600 text-white" : "bg-gray-200"}`}
-                onClick={() => { setSeries(s); calc(vi, targetVo, s, useCombinations); }}
+                onClick={() => { setSeries(s); calc(vi, targetVo, s, useSeries, useParallel); }}
               >
                 {s}
               </button>
             ))}
           </div>
         </div>
-        <label className="flex items-center gap-2 mt-5">
-          <input
-            type="checkbox"
-            checked={useCombinations}
-            onChange={(e) => { const v = e.target.checked; setUseCombinations(v); calc(vi, targetVo, series, v); }}
-          />
-          <span className="text-sm">允许串并联组合</span>
-        </label>
+        <div className="flex items-center gap-3 mt-5">
+          <label className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={useSeries}
+              onChange={(e) => { const v = e.target.checked; setUseSeries(v); calc(vi, targetVo, series, v, useParallel); }}
+            />
+            <span className="text-sm">允许串联</span>
+          </label>
+          <label className="flex items-center gap-1">
+            <input
+              type="checkbox"
+              checked={useParallel}
+              onChange={(e) => { const v = e.target.checked; setUseParallel(v); calc(vi, targetVo, series, useSeries, v); }}
+            />
+            <span className="text-sm">允许并联</span>
+          </label>
+        </div>
       </div>
 
       {solutions.length > 0 && (
@@ -107,8 +139,8 @@ export default function DividerCalculator() {
               {solutions.map((sol, i) => (
                 <tr key={i} className="hover:bg-gray-50">
                   <td className="border px-2 py-1">{i + 1}</td>
-                  <td className="border px-2 py-1">{formatResistance(sol.r1)}</td>
-                  <td className="border px-2 py-1">{formatResistance(sol.r2)}</td>
+                  <td className="border px-2 py-1 text-xs">{formatResistorComposition(sol.r1)}</td>
+                  <td className="border px-2 py-1 text-xs">{formatResistorComposition(sol.r2)}</td>
                   <td className="border px-2 py-1 font-mono">{formatSi(sol.vo, "V", 4)}</td>
                   <td className="border px-2 py-1 font-mono">{sol.error_percent.toFixed(2)}%</td>
                 </tr>
