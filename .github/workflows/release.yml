@@ -53,6 +53,6 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: '__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true
+          releaseBody: 'See the assets to download the executable.'
+          releaseDraft: false
           prerelease: false
