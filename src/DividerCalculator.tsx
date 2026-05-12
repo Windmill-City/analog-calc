@@ -155,7 +155,7 @@ export default function DividerCalculator() {
   }, [])
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col flex-1 min-h-0 space-y-4">
       <h2 className="text-lg font-semibold">电阻分压计算器</h2>
 
       <div className="grid grid-cols-2 gap-4">
@@ -516,7 +516,7 @@ export default function DividerCalculator() {
         </button>
       </details>
 
-      <div className="h-96 overflow-hidden">
+      <div className="flex-1 overflow-hidden">
         {pending && (
           <div className="h-full flex items-center justify-center py-8 text-gray-400">
             <svg

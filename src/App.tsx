@@ -16,8 +16,8 @@ function App() {
   const setActiveTab = useStore((s) => s.setActiveTab)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto px-4 py-4">
+    <div className="h-screen bg-gray-50 flex flex-col">
+      <div className="max-w-3xl mx-auto w-full px-4 py-4 flex flex-col flex-1 min-h-0">
         <nav className="flex gap-1 mb-6 border-b">
           {TABS.map((tab) => (
             <button
@@ -34,7 +34,7 @@ function App() {
           ))}
         </nav>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 flex flex-col flex-1 min-h-0">
           {activeTab === "filter" && <FilterCalculator />}
           {activeTab === "noise" && <NoiseCalculator />}
           {activeTab === "divider" && <DividerCalculator />}

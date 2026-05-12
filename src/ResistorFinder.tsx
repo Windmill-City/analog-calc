@@ -136,7 +136,7 @@ export default function ResistorFinder() {
   }, [])
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col min-h-0 space-y-4">
       <h2 className="text-lg font-semibold">电阻取值</h2>
 
       <div>
@@ -418,7 +418,7 @@ export default function ResistorFinder() {
         </button>
       </details>
 
-      <div className="h-96 overflow-hidden">
+      <div className="flex-1 overflow-hidden">
         {pending && (
           <div className="h-full flex items-center justify-center py-8 text-gray-400">
             <svg
