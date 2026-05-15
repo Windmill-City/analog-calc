@@ -1,11 +1,13 @@
 import DividerCalculator from "./DividerCalculator"
 import FilterCalculator from "./FilterCalculator"
+import LcFilterCalculator from "./LcFilterCalculator"
 import NoiseCalculator from "./NoiseCalculator"
 import ResistorFinder from "./ResistorFinder"
 import { useStore, type Tab } from "./store"
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "filter", label: "RC滤波器" },
+  { key: "lcFilter", label: "LC滤波器" },
   { key: "noise", label: "运放噪声" },
   { key: "divider", label: "电阻分压" },
   { key: "resistor", label: "电阻取值" },
@@ -36,6 +38,7 @@ function App() {
 
         <div className="bg-white rounded-lg shadow p-6 flex flex-col flex-1 min-h-0">
           {activeTab === "filter" && <FilterCalculator />}
+          {activeTab === "lcFilter" && <LcFilterCalculator />}
           {activeTab === "noise" && <NoiseCalculator />}
           {activeTab === "divider" && <DividerCalculator />}
           {activeTab === "resistor" && <ResistorFinder />}

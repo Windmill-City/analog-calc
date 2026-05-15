@@ -1,7 +1,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
-export type Tab = "filter" | "noise" | "divider" | "resistor"
+export type Tab = "filter" | "lcFilter" | "noise" | "divider" | "resistor"
 
 export interface FilterRow {
   id: number
@@ -11,6 +11,16 @@ export interface FilterRow {
 
 export interface FilterState {
   rows: FilterRow[]
+}
+
+export interface LcFilterRow {
+  id: number
+  l: string
+  c: string
+}
+
+export interface LcFilterState {
+  rows: LcFilterRow[]
 }
 
 export interface NoiseState {
@@ -48,6 +58,7 @@ export interface ResistorState {
 interface AppState {
   activeTab: Tab
   filter: FilterState
+  lcFilter: LcFilterState
   noise: NoiseState
   divider: DividerState
   resistor: ResistorState
@@ -56,6 +67,7 @@ interface AppState {
 interface AppActions {
   setActiveTab: (tab: Tab) => void
   setFilter: (partial: Partial<FilterState>) => void
+  setLcFilter: (partial: Partial<LcFilterState>) => void
   setNoise: (partial: Partial<NoiseState>) => void
   setDivider: (partial: Partial<DividerState>) => void
   setResistor: (partial: Partial<ResistorState>) => void
@@ -66,6 +78,7 @@ export const useStore = create<AppState & AppActions>()(
     (set) => ({
       activeTab: "filter",
       filter: { rows: [{ id: 0, r: "1k", c: "1u" }] },
+      lcFilter: { rows: [{ id: 0, l: "10u", c: "100p" }] },
       noise: { gbw: "1M", gain: "2", vnDensity: "10n", filterOrder: 1, rcBandwidth: "1k" },
       divider: {
         vi: "5",
@@ -91,6 +104,7 @@ export const useStore = create<AppState & AppActions>()(
       },
       setActiveTab: (tab) => set({ activeTab: tab }),
       setFilter: (partial) => set((s) => ({ filter: { ...s.filter, ...partial } })),
+      setLcFilter: (partial) => set((s) => ({ lcFilter: { ...s.lcFilter, ...partial } })),
       setNoise: (partial) => set((s) => ({ noise: { ...s.noise, ...partial } })),
       setDivider: (partial) => set((s) => ({ divider: { ...s.divider, ...partial } })),
       setResistor: (partial) => set((s) => ({ resistor: { ...s.resistor, ...partial } })),
